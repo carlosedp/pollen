@@ -47,7 +47,9 @@ and a static build of the example (`.github/workflows/test.yml`).
 node tools/norns-web/serve.mjs [script dir, default .] [port, default 8800]
 ```
 
-Open http://localhost:8800/. The page reloads by itself when you save a script file (`.lua`,
+Open http://localhost:8800/. The server also proxies the web for the page (`/proxy?url=`, used by
+the built-in curl and by stand-ins through `NornsWeb.proxy`), so CORS doesn't get in the way while
+developing. The page reloads by itself when you save a script file (`.lua`,
 `.js`, `.json`) or norns-web's own, and keeps your params across the reload (press Start sound
 again: browsers only start audio on a click). Changes to `serve.mjs` or `manifest.mjs` need a
 restart.
@@ -157,8 +159,12 @@ When the script sets `engine.name = "X"`, the page loads `lib/Engine_X.js` from 
 ignores that file). It registers a factory that returns an object with one method per engine
 command, plus optional `start(ctx, out)` (called when the page's sound is switched on, with an
 `AudioContext` and an output node), `os_capture(cmd)` (answers `util.os_capture`, for scripts
-that look for files on norns) and `poll(name)` (a number for the script's `poll.set(name, f)`, as
-the engine's `addPoll` would give; asked on each poll's own `time`):
+that look for files on norns), `poll(name)` (a number for the script's `poll.set(name, f)`, as
+the engine's `addPoll` would give; asked on each poll's own `time`) and `system_cmd(cmd)` (the
+output of a `norns.system_cmd`, a string or a promise of one, for the programs a script runs on
+norns, such as a player; `undefined` passes the command on). A stand-in that streams audio from
+the web wraps its URLs in `NornsWeb.proxy(url)`: through the dev server's proxy while developing,
+as they are in a static build (where only servers that allow CORS work):
 
 ```js
 NornsWeb.engines.X = () => ({
@@ -204,7 +210,10 @@ value (`params:get("x")`), a statement just runs. Up and down recall history.
 - **PARAMS:** PSETs live in the browser's storage (8 slots next to the panel, or `params:write(n)` /
   `params:read(n)` from the REPL), not in files; no MIDI mapping, no clock params.
 - **Audio:** only what the stand-in plays.
-- `norns.system_cmd` is logged, not run.
+- **`norns.system_cmd`** goes to the stand-in's `system_cmd(cmd)` first, then to a built-in
+  `curl` (on `fetch`: `-s -L -f -I -m -A -H -o -w '%{url_effective}'`, one URL, no pipes), and is
+  otherwise logged, not run. Its callback gets the output later, as on norns. `util.make_dir`
+  works; files written by `curl -o` are there for Lua's `io.open`, until the page reloads.
 
 ## License
 
