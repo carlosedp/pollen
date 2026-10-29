@@ -22,6 +22,8 @@ js_bridge = {
   midi_send = function() end,
   nb = function() end,
   poll = function(name) if name == "__check" then return 0.5 end end,
+  -- the page runs a system_cmd and answers later; here: at once, with the command echoed
+  system_cmd = function(id, cmd) norns_web.system_cmd_done(id, "ran: " .. cmd) end,
 }
 
 dofile("lib/norns.lua")
@@ -45,6 +47,11 @@ p.time = 0.1
 p:start()
 for i = 1, 30 do norns_web.tick(t0 + i / 60) end
 assert(got == 0.5, "poll: the callback never got the stand-in's value")
+
+-- system_cmd: the callback gets the page's output
+local out
+norns.system_cmd("echo hi", function(o) out = o end)
+assert(out == "ran: echo hi", "system_cmd: the callback didn't get the output")
 
 print(string.format("%s: %d frames in %d s, %d error(s)", name, frames, seconds, #errors))
 if #errors > 0 or frames == 0 then os.exit(1) end

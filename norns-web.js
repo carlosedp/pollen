@@ -384,6 +384,77 @@
     }
   }
 
+  // ---------- norns.system_cmd ----------
+  // A command goes to the stand-in's system_cmd(cmd) first (a string, or a promise of one, is
+  // its output; undefined passes it on), then to a built-in curl on fetch, else it's logged as
+  // not run. The output goes back to Lua's callback. On the dev server, fetches and the stand-in's
+  // streams can go through its /proxy (NornsWeb.proxy(url)), so CORS doesn't stop them.
+  let fs = null;            // the Lua VM's file system, once it's up (for curl -o, util.make_dir)
+  window.NornsWeb.dev = false;
+  window.NornsWeb.proxy = (url) => (window.NornsWeb.dev && /^https?:/.test(url) ? `/proxy?url=${encodeURIComponent(url)}` : url);
+  function mkdirs(path) {
+    let at = "";
+    for (const part of String(path).split("/").filter(Boolean)) {
+      at += "/" + part;
+      try { fs.mkdir(at); } catch (e) { /* already there */ }
+    }
+  }
+  // the words of a shell command, quotes respected (enough for curl lines, not a shell)
+  function words(cmd) {
+    const out = []; let cur = null, q = null;
+    for (let i = 0; i < cmd.length; i++) {
+      const c = cmd[i];
+      if (q) { if (c === q) q = null; else if (c === "\\" && q === '"' && i + 1 < cmd.length) cur += cmd[++i]; else cur += c; continue; }
+      if (c === "'" || c === '"') { q = c; cur = cur ?? ""; continue; }
+      if (/\s/.test(c)) { if (cur !== null) out.push(cur), (cur = null); continue; }
+      if (c === "|" || c === ";" || c === "&" || c === ">" || c === "<") return null; // a pipeline or more: not ours
+      cur = (cur ?? "") + c;
+    }
+    if (cur !== null) out.push(cur);
+    return out;
+  }
+  // curl [-s -S -L -f -I] [-m|--max-time s] [-A ua] [-H h] [-o file] [-w '%{url_effective}'] url
+  async function curl(argv) {
+    let url = null, out = null, max = 0, head = false, fail = false, write = null; const headers = {};
+    for (let i = 1; i < argv.length; i++) {
+      const a = argv[i];
+      if (a === "-m" || a === "--max-time") max = +argv[++i];
+      else if (a === "-o" || a === "--output") out = argv[++i];
+      else if (a === "-A" || a === "--user-agent") headers["user-agent"] = argv[++i];
+      else if (a === "-H" || a === "--header") { const [k, ...v] = argv[++i].split(":"); headers[k.trim().toLowerCase()] = v.join(":").trim(); }
+      else if (a === "-w" || a === "--write-out") write = argv[++i];
+      else if (a === "-I" || a === "--head") head = true;
+      else if (a === "-f" || a === "--fail") fail = true;
+      else if (/^-[sSLfI]+$/.test(a)) { if (a.includes("I")) head = true; if (a.includes("f")) fail = true; }
+      else if (a === "--compressed" || a === "--location" || a === "--silent" || a === "--show-error") { /* fetch does these */ }
+      else if (!a.startsWith("-")) url = a;
+    }
+    if (!url) return "";
+    const ctl = new AbortController(), timer = max > 0 ? setTimeout(() => ctl.abort(), max * 1000) : null;
+    try {
+      const res = await fetch(window.NornsWeb.proxy(url), { method: head ? "HEAD" : "GET", headers, signal: ctl.signal });
+      const final = res.headers.get("x-norns-web-url") || (window.NornsWeb.dev ? url : res.url) || url;
+      if (fail && !res.ok) return write ? write.replace("%{url_effective}", final).replace("%{http_code}", res.status) : "";
+      const body = head ? "" : await res.text();
+      if (out && out !== "/dev/null") { mkdirs(out.slice(0, out.lastIndexOf("/"))); fs.writeFile(out, body); }
+      const shown = out ? "" : body;
+      return shown + (write ? write.replace("%{url_effective}", final).replace("%{http_code}", res.status) : "");
+    } catch (e) {
+      log(`curl ${url}: ${e.name === "AbortError" ? "timed out" : e.message}`, "error");
+      return write ? write.replace("%{url_effective}", "").replace("%{http_code}", "000") : "";
+    } finally { clearTimeout(timer); }
+  }
+  async function runSystemCmd(cmd) {
+    if (engine && typeof engine.system_cmd === "function") {
+      try { const r = await engine.system_cmd(cmd); if (r !== undefined && r !== null) return String(r); }
+      catch (e) { log(`engine stand-in: system_cmd: ${e.message}`, "error"); return ""; }
+    }
+    const argv = words(cmd);
+    if (argv && argv[0] === "curl") return curl(argv);
+    log(`system_cmd (not run in the browser): ${cmd}`);
+    return "";
+  }
+
   // ---------- sound ----------
   let audio = null;
   const soundBtn = $("#sound");
@@ -895,7 +966,13 @@
       await factory.mountFile(`/code/${name}/${path}`, src);
     await factory.mountFile("/norns/norns.lua", nornsLua);
     lua = await factory.createEngine();
+    fs = (await factory.getLuaModule()).module.FS;
+    window.NornsWeb.dev = !!dev;
     lua.global.set("js_bridge", {
+      system_cmd: (id, cmd) => {
+        runSystemCmd(String(cmd)).then((out) => lua.global.get("norns_web").system_cmd_done(id, out));
+      },
+      make_dir: (path) => mkdirs(String(path)),
       engine: engineCall,
       engine_name: () => {},
       log: (s) => log(String(s)),

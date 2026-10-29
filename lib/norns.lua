@@ -476,7 +476,7 @@ function util.trim(s) return (tostring(s):gsub("^%s+", ""):gsub("%s+$", "")) end
 function util.acronym(s) return (tostring(s):gsub("(%w)%w*%s*", "%1")) end
 function util.file_exists(path) local f = io.open(path, "r"); if f then f:close(); return true end; return false end
 function util.os_capture(cmd) return js.os_capture(cmd) or "" end
-function util.make_dir() end
+function util.make_dir(path) if js.make_dir then js.make_dir(path) end end
 function util.scandir() return {} end
 function util.wrap(n, min, max) return (n - min) % (max - min + 1) + min end
 tab = {}
@@ -504,9 +504,22 @@ engine = setmetatable({}, {
 
 -- ---------- the rest of the system ----------
 _path = { code = "/code/", dust = "/dust/", data = "/data/", audio = "/audio/" }
+-- norns.system_cmd: run by the page (js.system_cmd: the stand-in's system_cmd, else a built-in
+-- curl on fetch, else logged); the output comes back later through norns_web.system_cmd_done,
+-- as norns' own runs in the background. Without the page's help it's logged and answers "".
+local pending_cmds, next_cmd = {}, 0
 norns = {
   state = {}, version = { update = "norns-web" },
-  system_cmd = function(cmd, cb) print("system_cmd (not run in the browser): " .. cmd); if cb then cb("") end end,
+  system_cmd = function(cmd, cb)
+    if js.system_cmd then
+      next_cmd = next_cmd + 1
+      pending_cmds[next_cmd] = cb or false
+      js.system_cmd(next_cmd, cmd)
+    else
+      print("system_cmd (not run in the browser): " .. cmd)
+      if cb then cb("") end
+    end
+  end,
   enc = { sens = function() end, accel = function() end },
   none = function() end,
 }
@@ -633,6 +646,11 @@ function norns_web.repl(code)
   end
 end
 
+function norns_web.system_cmd_done(id, out)
+  local cb = pending_cmds[id]
+  pending_cmds[id] = nil
+  if cb then guarded(cb, out or "") end
+end
 function norns_web.enc(n, d) if enc then guarded(enc, n, d) end end
 function norns_web.key(n, z) if key then guarded(key, n, z) end end
 function norns_web.set_tempo(t) tempo = t end

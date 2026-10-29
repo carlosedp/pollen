@@ -6,6 +6,9 @@
 // /files.json  the script's name, main file and every .lua file under its dir
 // /script/...  the script's own files (for lib/Engine_<name>.js)
 // /__reload    an event stream: "reload" whenever a watched file changes
+// /proxy?url=  fetches an http(s) URL for the page and streams it back (redirects followed,
+//              the final URL in x-norns-web-url), so CORS doesn't stop a script's curl or
+//              a stand-in's audio streams while developing; the static build has no proxy
 // /...         this directory (page, runtime, vendored wasmoon)
 //
 // Watched: the script's .lua, .js and .json files, and norns-web's own page and
@@ -57,11 +60,40 @@ for (const dir of new Set([scriptDir, here])) {
   catch (e) { console.log(`can't watch ${dir} (${e.message}): reload the page by hand`); }
 }
 
+// the proxy: endless radio streams included, so the upstream fetch stops when the page lets go
+async function proxy(req, res, target) {
+  if (!/^https?:\/\//.test(target || "")) { res.writeHead(400); res.end("url= an http(s) URL"); return; }
+  const ctl = new AbortController();
+  req.on("close", () => ctl.abort());
+  try {
+    const headers = {};
+    for (const h of ["user-agent", "range", "accept"]) if (req.headers[h]) headers[h] = req.headers[h];
+    const up = await fetch(target, { method: req.method === "HEAD" ? "HEAD" : "GET", headers, redirect: "follow", signal: ctl.signal });
+    const out = { "cache-control": "no-store", "x-norns-web-url": up.url };
+    for (const h of ["content-type", "content-length", "accept-ranges", "content-range", "icy-name"]) {
+      const v = up.headers.get(h);
+      if (v) out[h] = v;
+    }
+    res.writeHead(up.status, out);
+    if (!up.body || req.method === "HEAD") { res.end(); return; }
+    for await (const chunk of up.body) if (!res.write(chunk)) await new Promise(r => res.once("drain", r));
+    res.end();
+  } catch (e) {
+    if (ctl.signal.aborted) return;
+    if (!res.headersSent) res.writeHead(502);
+    res.end(String(e.message));
+  }
+}
+
 http.createServer((req, res) => {
   const url = new URL(req.url, "http://x").pathname;
   if (url === "/files.json") {
     res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
     res.end(JSON.stringify({ ...manifest(scriptDir, "script/"), dev: true }));
+    return;
+  }
+  if (url === "/proxy") {
+    proxy(req, res, new URL(req.url, "http://x").searchParams.get("url"));
     return;
   }
   if (url === "/__reload") {
