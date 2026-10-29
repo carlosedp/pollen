@@ -1,0 +1,21 @@
+{
+  "title": "pollen",
+  "subtitle": "the world's radio, carried on the wind, scattered as grains · for monome norns",
+  "icon": "doc/img/icon.svg",
+  "about": "A live granular instrument. Sound comes in and is caught on a reel, a loop of the last few seconds, drawn as a ring. Grains fly off it like pollen: you choose how far back they reach, how many, how long, how high, and how they're colored. Press the reel to keep what it caught. Soon the sound will be live radio from anywhere on Earth; for now a made-up broadcast plays in.",
+  "more": "pollen is a script for monome norns, a small computer for making sound. What plays here is the real script, running in your browser, with its engine rebuilt in Web Audio and the reverb on the same Mutable Instruments code a norns plays. The screen shows pictures, not numbers: each part has two knobs, and turning one changes the bloom.",
+  "controls": [
+    { "keys": "E1", "does": "pick a part: catch, scatter, tint, tone or air" },
+    { "keys": "E2 · E3", "does": "shape that part; the two knobs show their names while you turn them" },
+    { "keys": "K3", "does": "a gesture: press the reel, a burst of grains, play them backwards, static, hold the haze" },
+    { "keys": "hold K2 + E2", "does": "choose a variety: the reel's length, the grains' shape, the scale, the media" },
+    { "keys": "hold K1", "does": "peek at every part and where its knobs are" }
+  ],
+  "install": ";install https://github.com/carlosedp/pollen",
+  "links": [
+    { "label": "pollen on GitHub", "url": "https://github.com/carlosedp/pollen" },
+    { "label": "norns-web", "url": "https://github.com/carlosedp/norns-web" },
+    { "label": "monome norns", "url": "https://monome.org/docs/norns/" }
+  ],
+  "footer": "pollen is made by Voltage Foundry Modular · © 2026 · code under the GNU GPL v3.0 · after ideas from Mutable Instruments Clouds and Beads (Émilie Gillet, MIT) · reverb: Volker Böhm's mi-UGens"
+}

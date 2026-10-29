@@ -1,0 +1,32 @@
+# On every push and PR: the Lua on Lua 5.3 (what norns runs), the browser's engine rendered
+# offline, and the SuperCollider engine compiled and played on a real scsynth (in docker).
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lua-and-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Smoke test on Lua 5.3, like norns
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.3
+          lua5.3 test/smoke.lua
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: The browser's engine, rendered offline
+        run: node test/engine.mjs
+
+  supercollider:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: The engine on scsynth (Debian's SuperCollider 3.13, jackd's dummy driver)
+        run: test/sc/run.sh
