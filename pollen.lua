@@ -1,0 +1,279 @@
+-- pollen
+-- the world's radio, carried
+-- on the wind, scattered
+-- as grains
+--
+-- E1 choose a part
+-- E2 E3 shape it
+-- K3 its gesture
+-- hold K2 + E2: its variety
+-- hold K1: peek
+--
+-- v0: the reel and the grains,
+-- on the norns input.
+-- the radio comes next.
+--
+-- by Voltage Foundry Modular
+-- vfmod.com
+
+-- Copyright (C) 2026 Voltage Foundry Modular. Free software under the GNU GPL v3.0
+-- (see LICENSE).
+
+engine.name = "Pollen"
+
+local S = include("lib/sound")
+local bloom = include("lib/bloom")
+
+local FPS = 15
+
+-- the parts of pollen, each with two macros (E2, E3), a gesture (K3) and a variety
+-- (hold K2 + E2). A gesture that holds a state keeps it in a param, so presets save it.
+local PARTS = {
+  { id = "catch", macros = { "memory", "cross" }, defaults = { 0.3, 0.2 },
+    gesture = "press", hold = "catch_press", variety = "catch_reel" },
+  { id = "scatter", macros = { "density", "size" }, defaults = { 0.45, 0.45 },
+    gesture = "burst", variety = "scatter_envelope" },
+  { id = "tint", macros = { "pitch", "spread" }, defaults = { 0.5, 0.15 },
+    gesture = "flip", hold = "tint_flip", variety = "tint_scale" },
+  { id = "tone", macros = { "color", "drive" }, defaults = { 0.5, 0.1 },
+    gesture = "static", variety = "tone_media" },
+  { id = "air", macros = { "space", "mix" }, defaults = { 0.35, 0.75 },
+    gesture = "haze", hold = "air_haze" },
+}
+
+local part = 1
+local held = { false, false, false } -- K1, K2, K3
+local k2_used = false
+local burst, static_env = 0, 0
+local head, filled = 0, 0 -- the write head and how much of the reel is caught (s), mirrored
+local sent = {}
+local reel_now = 15 -- the engine's reel (s)
+local shown = { part = 0, e2 = 0, e3 = 0, word = 0 } -- seconds left for each overlay
+local word = ""
+local redraw_metro
+
+local function m(id) return params:get(id) end
+local function db(v) return v <= -59.9 and 0 or 10 ^ (v / 20) end
+
+-- the values sound.engine() maps, from the params and the gestures in flight
+local function values()
+  return {
+    catch_memory = m("catch_memory"), catch_cross = m("catch_cross"),
+    scatter_density = m("scatter_density"), scatter_size = m("scatter_size"),
+    tint_pitch = m("tint_pitch"), tint_spread = m("tint_spread"),
+    tone_color = m("tone_color"), tone_drive = m("tone_drive"),
+    air_space = m("air_space"), air_mix = m("air_mix"),
+    reel = S.REELS[m("catch_reel")], envelope = m("scatter_envelope"), media = m("tone_media"),
+    scale = m("tint_scale"),
+    frozen = m("catch_press") == 1, flipped = m("tint_flip") == 1, hazed = m("air_haze") == 1,
+    burst = burst,
+  }
+end
+
+-- send whatever changed since last time
+local function send()
+  local e = S.engine(values())
+  e.level = db(m("level"))
+  e.adc = db(m("input"))
+  e.static = math.max(m("static"), static_env)
+  for k, v in pairs(e) do
+    if sent[k] ~= v then
+      engine.set(k, v)
+      sent[k] = v
+    end
+  end
+end
+
+local function say(w) word, shown.word = w, 1.2 end
+
+-- ---------- params ----------
+
+local function add_params()
+  local macro_spec = function(d) return controlspec.new(0, 1, "lin", 0, d, "", 0.01) end
+  local counts = { catch = 4, scatter = 3, tint = 4, tone = 3, air = 3 }
+  for _, P in ipairs(PARTS) do
+    params:add_group("pollen_" .. P.id, P.id, counts[P.id])
+    for i, name in ipairs(P.macros) do
+      local id = P.id .. "_" .. name
+      params:add_control(id, name, macro_spec(P.defaults[i]))
+      params:set_action(id, send)
+    end
+    if P.id == "catch" then
+      local names = {}
+      for i, s in ipairs(S.REELS) do names[i] = s .. " s" end
+      params:add_option("catch_reel", "reel", names, 3)
+      params:set_action("catch_reel", function(i)
+        if S.REELS[i] == reel_now then return end -- the engine starts with a 15 s reel
+        reel_now = S.REELS[i]
+        engine.reel(reel_now)
+        head, filled = 0, 0
+        bloom.reset()
+        send()
+      end)
+    elseif P.id == "scatter" then
+      params:add_option("scatter_envelope", "envelope", S.ENVELOPES, 1)
+      params:set_action("scatter_envelope", send)
+    elseif P.id == "tint" then
+      local names = {}
+      for i, s in ipairs(S.SCALES) do names[i] = s.name end
+      params:add_option("tint_scale", "scale", names, 2)
+      params:set_action("tint_scale", send)
+    elseif P.id == "tone" then
+      params:add_option("tone_media", "media", S.MEDIA, 1)
+      params:set_action("tone_media", send)
+    end
+    if P.hold then
+      params:add_binary(P.hold, P.gesture, "toggle", 0)
+      params:set_action(P.hold, send)
+    end
+  end
+  params:add_group("pollen_levels", "levels", 4)
+  params:add_control("level", "level", controlspec.new(-60, 6, "lin", 0, 0, "dB", 0.01))
+  params:set_action("level", send)
+  params:add_control("input", "input", controlspec.new(-60, 6, "lin", 0, 0, "dB", 0.01))
+  params:set_action("input", send)
+  params:add_control("static", "static", controlspec.new(0, 1, "lin", 0, 0, "", 0.01))
+  params:set_action("static", send)
+  params:add_trigger("clear", "clear the reel")
+  params:set_action("clear", function()
+    engine.clear()
+    filled = 0
+    bloom.reset()
+  end)
+end
+
+-- ---------- controls ----------
+
+function enc(n, d)
+  local P = PARTS[part]
+  if n == 1 then
+    part = util.clamp(part + d, 1, #PARTS)
+    shown.part = 1.5
+  elseif held[2] and n == 2 then
+    if P.variety then
+      params:delta(P.variety, d)
+      say(params:string(P.variety))
+    end
+    k2_used = true
+  elseif n == 2 or n == 3 then
+    params:delta(P.id .. "_" .. P.macros[n - 1], d)
+    shown["e" .. n] = 1.2
+  end
+end
+
+local function gesture(P)
+  if P.hold then
+    local on = m(P.hold) == 1
+    params:set(P.hold, on and 0 or 1)
+    local words = { catch_press = { "pressed", "released" }, tint_flip = { "backwards", "forwards" },
+      air_haze = { "haze held", "haze free" } }
+    say(words[P.hold][on and 2 or 1])
+  elseif P.gesture == "burst" then
+    burst = 1
+    say("burst")
+  elseif P.gesture == "static" then
+    static_env = 1
+    say("static")
+  end
+  send()
+end
+
+function key(n, z)
+  held[n] = z == 1
+  if n == 2 then
+    if z == 1 then k2_used = false end
+    -- a K2 tap: the wind's (the next station), when the radio comes
+  elseif n == 3 and z == 1 and not held[1] then
+    gesture(PARTS[part])
+  end
+end
+
+-- ---------- the picture ----------
+
+-- what the bloom draws, from what the sound is doing
+local function look()
+  local e = S.engine(values())
+  return {
+    reel = S.REELS[m("catch_reel")], head = head, filled = filled, frozen = m("catch_press") == 1,
+    density = e.density, size = e.size, rate = 2 ^ (e.pitch / 12), reverse = e.reverse,
+    age = e.position, pos_spread = e.pos_spread, fb = e.fb,
+    space = m("air_space"), hazed = m("air_haze") == 1,
+    color = m("tone_color"), drive = e.drive, media = m("tone_media"),
+    static = math.max(m("static"), static_env),
+  }
+end
+
+local function text(x, y, s, l, align)
+  screen.level(math.floor(l))
+  screen.move(x, y)
+  if align == "right" then screen.text_right(s) elseif align == "center" then screen.text_center(s) else screen.text(s) end
+end
+
+-- hold K1: every part and where its two macros are, as bars (no numbers)
+local function draw_peek()
+  for i, P in ipairs(PARTS) do
+    local y = 4 + (i - 1) * 12
+    local l = i == part and 15 or 5
+    text(2, y + 6, P.id, l)
+    for k = 1, 2 do
+      local x = 48 + (k - 1) * 40
+      local v = m(P.id .. "_" .. P.macros[k])
+      screen.level(2)
+      screen.rect(x, y + 2, 34, 3)
+      screen.fill()
+      screen.level(l)
+      screen.rect(x, y + 2, math.max(1, math.floor(34 * v + 0.5)), 3)
+      screen.fill()
+    end
+  end
+end
+
+function redraw()
+  screen.clear()
+  if held[1] then
+    draw_peek()
+  else
+    bloom.draw(look())
+    local P = PARTS[part]
+    if shown.part > 0 then text(2, 8, P.id, 15 * math.min(1, shown.part)) end
+    if shown.e2 > 0 then text(2, 62, P.macros[1], 12 * math.min(1, shown.e2)) end
+    if shown.e3 > 0 then text(126, 62, P.macros[2], 12 * math.min(1, shown.e3), "right") end
+    if shown.word > 0 then text(126, 8, word, 12 * math.min(1, shown.word), "right") end
+  end
+  screen.update()
+end
+
+local function tick()
+  local dt = 1 / FPS
+  local reel = S.REELS[m("catch_reel")]
+  if m("catch_press") == 0 then
+    head = (head + dt) % reel
+    filled = math.min(reel, filled + dt)
+  end
+  for k, v in pairs(shown) do shown[k] = math.max(0, v - dt) end
+  if burst > 0 or static_env > 0 then
+    burst = math.max(0, burst - dt / 1.5)
+    static_env = math.max(0, static_env - dt / 1.2)
+    send()
+  end
+  bloom.update(dt, look())
+  redraw()
+end
+
+function init()
+  add_params()
+  params:bang()
+  send()
+  -- on a norns, the engine tells where its write head really is (the mirror drifts)
+  local p = poll.set("head", function(v) head = v end)
+  if p then
+    p.time = 0.5
+    p:start()
+  end
+  redraw_metro = metro.init(tick, 1 / FPS)
+  redraw_metro:start()
+end
+
+function cleanup()
+  if redraw_metro then redraw_metro:stop() end
+end
