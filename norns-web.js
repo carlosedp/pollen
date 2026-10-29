@@ -904,6 +904,12 @@
         (engine && engine.os_capture ? engine.os_capture(String(cmd)) : "") ||
         "",
       nb: (kind, note, v) => nbCall(String(kind), +note, +v),
+      // a poll's value: the stand-in's poll(name), a number, or nothing
+      poll: (name) => {
+        if (!engine || typeof engine.poll !== "function") return undefined;
+        try { const v = engine.poll(String(name)); return typeof v === "number" && Number.isFinite(v) ? v : undefined; }
+        catch (e) { log(`engine stand-in: poll ${name}: ${e.message}`, "error"); return undefined; }
+      },
       storage_get: (k) => store.get(String(k)),
       storage_set: (k, v) => store.set(String(k), String(v)),
     });
