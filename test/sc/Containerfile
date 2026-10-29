@@ -1,0 +1,6 @@
+# SuperCollider for the engine test (test/sc/run.sh): sclang, scsynth, and jackd's dummy
+# driver, so the server runs with no sound card.
+FROM docker.io/library/debian:bookworm-slim
+RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+      supercollider-language supercollider-server jackd2 xvfb xauth >/dev/null \
+ && rm -rf /var/lib/apt/lists/*
