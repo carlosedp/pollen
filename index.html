@@ -1,0 +1,1852 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-MQR76D2Z8P"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-MQR76D2Z8P');
+  </script>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#121513">
+  <title>norns-web</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Silkscreen&display=swap">
+  <style>
+    /* Layout: a norns standing on the ground at night (the hero, always dark, like a pixel-art banner),
+       then a page of paper: what's in the script and how to play it; the workbench (PARAMS, log, REPL)
+       is a drawer at the bottom of the window, so it can be open with the device in view. */
+    :root {
+      --paper: #e9ebe6;
+      --surface: #f4f5f1;
+      --ink: #1b1f1c;
+      --muted: #5a625c;
+      --rule: #cdd2cb;
+      --accent: #9a6b16;
+      --accent-soft: #f1e3c4;
+      /* the night: the same in both themes */
+      --night: #121513;
+      --night-2: #181c19;
+      --night-ink: #e3e6e1;
+      --night-muted: #9aa29b;
+      --night-rule: #2e3530;
+      --amber: #d9a441;
+      --amber-hi: #f0c96e;
+      --amber-lo: #a8741a;
+      /* hardware: the same object in both themes; the case's finish is black unless data-finish says otherwise */
+      --body-a: #2c2f2d;
+      --body-b: #222423;
+      --chamfer-hi: rgba(255, 255, 255, 0.16);
+      --chamfer-lo: rgba(0, 0, 0, 0.6);
+      --wall-1: #171918;
+      --wall-2: #0e0f0e;
+      --engrave: #7b817b;
+      --engrave-lip: rgba(0, 0, 0, 0.6);
+      --lip: rgba(255, 255, 255, 0.12);
+      --screw-hi: #5d615e;
+      --screw-lo: #1a1c1b;
+      --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='.33 .33 .33 0 0 .33 .33 .33 0 0 .33 .33 .33 0 0 0 0 0 0 .22'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      --oled: #030303;
+      --well: #050706;
+      --font-display: "Silkscreen", "JetBrains Mono", ui-monospace, monospace;
+      --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+      --step--1: 0.8125rem;
+      --step-0: 1rem;
+      --step-1: 1.25rem;
+      --step-2: 1.75rem;
+      --gutter: max(16px, env(safe-area-inset-left, 0px));
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --paper: #121513;
+        --surface: #181c19;
+        --ink: #e3e6e1;
+        --muted: #9aa29b;
+        --rule: #2a302c;
+        --accent: #e0b25a;
+        --accent-soft: #3a2f1a;
+        color-scheme: dark;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --paper: #121513;
+      --surface: #181c19;
+      --ink: #e3e6e1;
+      --muted: #9aa29b;
+      --rule: #2a302c;
+      --accent: #e0b25a;
+      --accent-soft: #3a2f1a;
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: var(--step-0);
+      line-height: 1.55;
+      padding-bottom: var(--hood-space, 48px);
+    }
+
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding-inline: var(--gutter);
+    }
+
+    a {
+      color: var(--accent);
+      text-underline-offset: 3px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      line-height: 1.15;
+      margin: 0;
+      text-wrap: balance;
+    }
+
+    h2 {
+      font-size: clamp(20px, 4vw, 26px);
+    }
+
+    h3 {
+      font-size: 15px;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    kbd {
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      border: 1px solid var(--rule);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 0 5px;
+      color: var(--ink);
+      background: var(--surface);
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    /* ---------- the night: sky, the device on the ground, the main controls ---------- */
+    .night {
+      position: relative;
+      background: var(--night);
+      color: var(--night-ink);
+      padding: 36px 0 28px;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    #sky {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      image-rendering: pixelated;
+    }
+
+    .night .wrap {
+      display: grid;
+      justify-items: center;
+      text-align: center;
+      gap: 22px;
+    }
+
+    .night header {
+      display: grid;
+      justify-items: center;
+      gap: 8px;
+    }
+
+    h1 {
+      font-size: clamp(30px, 7vw, 46px);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35em;
+    }
+
+    /* the script's icon (norns-web.json), beside its name: whole pixels, so a 32-grid icon stays crisp */
+    h1 .mark {
+      height: 64px;
+      width: auto;
+      image-rendering: pixelated;
+    }
+
+    @media (max-width: 560px) {
+      h1 .mark {
+        height: 48px;
+      }
+    }
+
+    .subtitle {
+      font-family: var(--font-mono);
+      color: var(--amber);
+      font-size: var(--step--1);
+      letter-spacing: 0.06em;
+    }
+
+    .lede {
+      max-width: 58ch;
+      color: var(--night-muted);
+      text-wrap: pretty;
+    }
+
+    /* --- the device: a norns or a shield (data-shell), the same parts arranged differently --- */
+    .frame {
+      width: 100%;
+      display: grid;
+      justify-items: center;
+    }
+
+    /* bead-blasted aluminium, a neutral grey */
+    .norns[data-finish="alu"] {
+      --body-a: #a9abaa;
+      --body-b: #9a9c9b;
+      --chamfer-hi: rgba(255, 255, 255, 0.6);
+      --chamfer-lo: rgba(0, 0, 0, 0.3);
+      --wall-1: #737574;
+      --wall-2: #5a5c5b;
+      --engrave: #484b4a;
+      --engrave-lip: rgba(255, 255, 255, 0.4);
+      --lip: rgba(255, 255, 255, 0.45);
+      --screw-hi: #d9dbda;
+      --screw-lo: #747675;
+      --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='.33 .33 .33 0 0 .33 .33 .33 0 0 .33 .33 .33 0 0 0 0 0 0 .16'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .norns {
+      position: relative;
+      width: 100%;
+      /* the grain (static noise, rasterized once) over a nearly flat body */
+      background: var(--grain), linear-gradient(180deg, var(--body-a), var(--body-b));
+      background-blend-mode: overlay, normal;
+      box-shadow:
+        inset 0 1px 0 var(--chamfer-hi), inset 1px 0 0 var(--chamfer-hi),
+        inset 0 -1px 0 var(--chamfer-lo), inset -1px 0 0 var(--chamfer-lo),
+        0 1px 0 var(--wall-1), 0 2px 0 var(--wall-1), 0 3px 0 var(--wall-2), 0 4px 0 var(--wall-2),
+        0 30px 40px -18px rgba(0, 0, 0, 0.9);
+      display: grid;
+      align-items: center;
+      text-align: left;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
+    }
+
+    .brand {
+      grid-area: brand;
+    }
+
+    .c-k1 {
+      grid-area: k1;
+    }
+
+    .c-e1 {
+      grid-area: e1;
+    }
+
+    .c-k2 {
+      grid-area: k2;
+    }
+
+    .c-k3 {
+      grid-area: k3;
+    }
+
+    .c-e2 {
+      grid-area: e2;
+    }
+
+    .c-e3 {
+      grid-area: e3;
+    }
+
+    /* norns: K1 and the name on top, E1 top right; K2 K3 over E2 E3 beside the screen */
+    .norns[data-shell="norns"] {
+      max-width: 720px;
+      border-radius: 18px;
+      padding: 18px 20px 22px;
+      gap: 14px 18px;
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
+      grid-template-areas: "k1 brand . e1" "screen screen k2 k3" "screen screen e2 e3";
+    }
+
+    .norns[data-shell="norns"] .c-e1 {
+      justify-self: end;
+    }
+
+    /* shield: squarer; K1 top left and E1 top right, the screen in the middle, K2 K3 E2 E3 along the bottom */
+    .norns[data-shell="shield"] {
+      max-width: 540px;
+      border-radius: 12px;
+      padding: 20px 22px 24px;
+      gap: 16px 12px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-areas: "k1 brand brand e1" "screen screen screen screen" "k2 k3 e2 e3";
+      justify-items: center;
+    }
+
+    .norns[data-shell="shield"] .brand {
+      justify-self: center;
+    }
+
+    .norns[data-shell="shield"] .screen {
+      justify-self: center;
+      width: min(100%, 450px);
+      /* the norns screen's size */
+    }
+
+    .norns[data-shell="shield"] .enc {
+      width: 58px;
+      height: 58px;
+    }
+
+    .norns[data-shell="shield"] .key {
+      width: 34px;
+      height: 34px;
+    }
+
+    /* the shield's corner screws */
+    .screw {
+      position: absolute;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background:
+        linear-gradient(45deg, transparent 44%, rgba(0, 0, 0, 0.55) 44% 56%, transparent 56%),
+        linear-gradient(-45deg, transparent 44%, rgba(0, 0, 0, 0.55) 44% 56%, transparent 56%),
+        radial-gradient(circle at 40% 35%, var(--screw-hi), var(--screw-lo));
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 1px 0 1px var(--lip);
+    }
+
+    .norns:not([data-shell="shield"]) .screw {
+      display: none;
+    }
+
+    .screw.tl {
+      top: 9px;
+      left: 9px;
+    }
+
+    .screw.tr {
+      top: 9px;
+      right: 9px;
+    }
+
+    .screw.bl {
+      bottom: 9px;
+      left: 9px;
+    }
+
+    .screw.br {
+      bottom: 9px;
+      right: 9px;
+    }
+
+    @media (max-width: 560px) {
+      .norns[data-shell="norns"] {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        justify-items: center;
+        grid-template-areas: "k1 brand brand e1" "screen screen screen screen" "k2 k3 e2 e3";
+      }
+
+      .norns[data-shell="norns"] .screen {
+        justify-self: stretch;
+      }
+
+      .norns[data-shell="shield"] {
+        padding: 16px 16px 20px;
+        gap: 14px 8px;
+      }
+
+      .norns[data-shell="shield"] .enc {
+        width: 52px;
+        height: 52px;
+      }
+    }
+
+    .screen {
+      grid-area: screen;
+      background: var(--oled);
+      border-radius: 6px;
+      padding: 10px;
+      position: relative;
+      /* set into the case: a shadowed top edge, a lit lower lip */
+      box-shadow: 0 0 0 3px #111211, 0 -1px 0 3px var(--chamfer-lo), 0 1px 0 3px var(--lip),
+        inset 0 2px 6px rgba(0, 0, 0, 0.9);
+    }
+
+    /* glass, barely there */
+    .screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(168deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015) 34%, transparent 35%);
+    }
+
+    .screen canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 2 / 1;
+      max-width: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    .brand {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: var(--engrave);
+      text-shadow: 0 1px 0 var(--engrave-lip);
+      text-transform: lowercase;
+    }
+
+    .key,
+    .enc {
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* a key: a matte, slightly dished cap in a hole in the case; pressed, it sinks in */
+    .key {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      touch-action: none;
+      background: #0b0c0c;
+      box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.9), 0 1px 0 var(--lip), 0 -1px 0 var(--chamfer-lo);
+    }
+
+    .key .cap {
+      position: absolute;
+      inset: 3px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 58%, rgba(0, 0, 0, 0.22), transparent 62%),
+        linear-gradient(180deg, #2e302f, #1d1f1e);
+      box-shadow: 0 2px 0 #050505, 0 2px 3px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+      transition: transform 50ms ease-out, box-shadow 50ms ease-out, filter 50ms ease-out;
+    }
+
+    .key.down .cap {
+      transform: translateY(1.5px) scale(0.97);
+      box-shadow: 0 0.5px 0 #050505, inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      filter: brightness(0.82);
+    }
+
+    /* an encoder turns forever, so no pointer: the knurled ring turns (one ridge a detent, 12°)
+       under light that stays put, around a spun face */
+    .enc {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #070707;
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.18), 0 3px 5px rgba(0, 0, 0, 0.45), 0 8px 14px -6px rgba(0, 0, 0, 0.5);
+      touch-action: none;
+    }
+
+    .enc .knurl {
+      position: absolute;
+      inset: 1px;
+      border-radius: 50%;
+      background: repeating-conic-gradient(#474a48 0deg, #1a1b1b 6.6deg, #0c0d0d 9.6deg, #474a48 12deg);
+      transition: transform 70ms ease-out;
+      will-change: transform;
+    }
+
+    .enc .face {
+      position: absolute;
+      inset: 17%;
+      border-radius: 50%;
+      background:
+        repeating-radial-gradient(circle, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 2.5px),
+        radial-gradient(circle at 50% 45%, #2a2c2b, #1a1c1b 75%);
+      box-shadow: 0 0 0 1px #050505, 0 1px 0 1px rgba(255, 255, 255, 0.07), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    }
+
+    .enc .light {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      pointer-events: none;
+      background:
+        linear-gradient(170deg, rgba(255, 255, 255, 0.28), transparent 38%, transparent 62%, rgba(0, 0, 0, 0.45)),
+        conic-gradient(from 300deg, rgba(255, 255, 255, 0.18), transparent 18%, transparent 82%, rgba(255, 255, 255, 0.18));
+      mix-blend-mode: soft-light;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .enc .knurl,
+      .key .cap {
+        transition: none;
+      }
+    }
+
+    .key:focus-visible,
+    .enc:focus-visible {
+      outline: 2px solid var(--amber);
+      outline-offset: 4px;
+    }
+
+    .ctl {
+      display: grid;
+      justify-items: center;
+      gap: 6px;
+    }
+
+    .ctl small {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--engrave);
+      text-shadow: 0 1px 0 var(--engrave-lip);
+      letter-spacing: 0.08em;
+    }
+
+    /* --- buttons: amber for the one that matters, outlines for the rest --- */
+    .btn {
+      font: 600 var(--step--1) var(--font-mono);
+      color: var(--ink);
+      background: transparent;
+      border: 1.5px solid var(--rule);
+      border-radius: 6px;
+      padding: 8px 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:hover {
+      border-color: var(--ink);
+    }
+
+    .btn:focus-visible,
+    summary:focus-visible,
+    a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .btn svg {
+      flex: none;
+    }
+
+    .btn.small {
+      padding: 3px 10px;
+      font-size: 12px;
+    }
+
+    .night .btn,
+    .frame.full .btn {
+      color: var(--night-ink);
+      border-color: var(--night-rule);
+      background: rgba(18, 21, 19, 0.6);
+    }
+
+    .night .btn:hover,
+    .frame.full .btn:hover {
+      border-color: var(--night-muted);
+    }
+
+    .night .btn:focus-visible,
+    .frame.full .btn:focus-visible {
+      outline-color: var(--amber);
+    }
+
+    .night .btn.primary,
+    .frame.full .btn.primary {
+      background: var(--amber);
+      border-color: var(--amber);
+      color: var(--night);
+      box-shadow: 0 3px 0 var(--amber-lo);
+      font-size: var(--step-0);
+      padding: 10px 22px;
+    }
+
+    .frame.full .btn.primary {
+      font-size: var(--step--1);
+      padding: 6px 14px;
+    }
+
+    .night .btn.primary:hover,
+    .frame.full .btn.primary:hover {
+      background: var(--amber-hi);
+      border-color: var(--amber-hi);
+    }
+
+    .night .btn.primary:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 var(--amber-lo);
+    }
+
+    /* once the sound is on, the button steps back */
+    .night .btn.primary[aria-pressed="true"],
+    .frame.full .btn.primary[aria-pressed="true"] {
+      background: transparent;
+      color: var(--amber);
+      border-color: var(--amber-lo);
+      box-shadow: none;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .night .btn.primary[aria-pressed="false"] {
+        animation: glow 2.4s ease-in-out infinite;
+      }
+
+      @keyframes glow {
+
+        0%,
+        100% {
+          box-shadow: 0 3px 0 var(--amber-lo), 0 0 0 0 rgba(217, 164, 65, 0);
+        }
+
+        50% {
+          box-shadow: 0 3px 0 var(--amber-lo), 0 0 22px 2px rgba(217, 164, 65, 0.35);
+        }
+      }
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .controls .group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .hint {
+      font-size: var(--step--1);
+      color: var(--night-muted);
+      max-width: 60ch;
+    }
+
+    .hint kbd {
+      color: var(--night-ink);
+      background: var(--night-2);
+      border-color: var(--night-rule);
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      .hint .kb {
+        display: none;
+      }
+    }
+
+    @media (hover: hover),
+    (pointer: fine) {
+      .hint .touch {
+        display: none;
+      }
+    }
+
+    /* the "look" menu: shell and screen color */
+    .menu {
+      position: relative;
+    }
+
+    .menu summary {
+      list-style: none;
+    }
+
+    .menu summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .menu .pop {
+      position: absolute;
+      z-index: 10;
+      bottom: calc(100% + 8px); /* upward, into the room above the buttons: the night clips what hangs below */
+      right: 0;
+      min-width: 210px;
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      text-align: left;
+      background: var(--night-2);
+      border: 1px solid var(--night-rule);
+      border-radius: 8px;
+      box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.8);
+      font-size: var(--step--1);
+      color: var(--night-muted);
+    }
+
+    @media (max-width: 560px) {
+      .menu .pop {
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+    }
+
+    .pop label {
+      display: grid;
+      gap: 4px;
+    }
+
+    /* a hosting plugin's options (checkboxes) */
+    .pop label.option {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--night-ink);
+    }
+
+    select {
+      font: inherit;
+      font-family: var(--font-mono);
+      color: var(--ink);
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 4px 6px;
+    }
+
+    .pop select {
+      color: var(--night-ink);
+      background: var(--night);
+      border-color: var(--night-rule);
+    }
+
+    /* --- full screen: just the device, scaled to fit (norns-web.js sets its width and scale) --- */
+    .full-bar {
+      display: none;
+    }
+
+    .frame.full {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: var(--night);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .frame.full .norns {
+      position: relative;
+      z-index: 1;
+      flex: none;
+      max-width: none;
+      transform-origin: center;
+    }
+
+    /* full screen's own night: stars, and the ground under the scaled device */
+    .full-sky {
+      display: none;
+    }
+
+    .frame.full .full-sky {
+      display: block;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+    .frame.full .full-bar {
+      z-index: 2;
+      display: flex;
+      gap: 8px;
+      position: absolute;
+      top: max(10px, env(safe-area-inset-top));
+      right: max(10px, env(safe-area-inset-right));
+    }
+
+    /* a phone on its side: the bar stacks down the right edge (norns-web.js picks this) */
+    .frame.full .full-bar.side,
+    .full-bar.side .group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .full-hint {
+      position: absolute;
+      z-index: 3;
+      left: 50%;
+      bottom: max(16px, env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: max-content;
+      max-width: calc(100% - 32px);
+      padding: 10px 16px;
+      border: 1px solid var(--night-rule);
+      border-radius: 999px;
+      background: rgba(18, 21, 19, 0.85);
+      color: var(--night-ink);
+      font-size: var(--step--1);
+      cursor: pointer;
+    }
+
+    .full-hint[hidden] {
+      display: none;
+    }
+
+    .full-hint svg {
+      flex: none;
+      color: var(--amber);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .full-hint svg {
+        animation: turn 2.4s ease-in-out infinite;
+      }
+
+      @keyframes turn {
+        0%, 30% { transform: rotate(0); }
+        60%, 100% { transform: rotate(-90deg); }
+      }
+    }
+
+    body.full {
+      overflow: hidden;
+    }
+
+    .btn.icon {
+      padding: 7px;
+    }
+
+    /* ---------- the page: sections on paper ---------- */
+    main {
+      display: grid;
+      gap: 56px;
+      padding-block: 48px 40px;
+    }
+
+    section {
+      display: grid;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .section-lede {
+      color: var(--muted);
+      max-width: 62ch;
+    }
+
+    /* what's in the script: pictures with a word each */
+    /* downloads (norns-web.json "downloads"): a card per package, each with its button */
+    .downloads {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .downloads li {
+      display: grid;
+      gap: 8px;
+      align-content: space-between;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+    }
+
+    .downloads b {
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: 0.03em;
+    }
+
+    .downloads p {
+      font-size: var(--step--1);
+      color: var(--muted);
+      text-wrap: pretty;
+    }
+
+    .downloads .btn {
+      justify-self: start;
+    }
+
+    .gallery {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(min(150px, 40vw), 1fr));
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .gallery li {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .gallery img {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 540 / 284;
+      display: block;
+      border-radius: 6px;
+      background: var(--well);
+      border: 1px solid var(--rule);
+      image-rendering: pixelated;
+    }
+
+    .gallery b {
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: 0.03em;
+    }
+
+    .gallery p {
+      font-size: var(--step--1);
+      color: var(--muted);
+      text-wrap: pretty;
+    }
+
+    /* how to play: the script's controls, then the keyboard and touch */
+    .howto {
+      display: grid;
+      gap: 28px;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    @media (max-width: 760px) {
+      .howto {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .moves {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 0;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .moves li {
+      display: grid;
+      grid-template-columns: 9.5rem minmax(0, 1fr);
+      gap: 14px;
+      align-items: baseline;
+      padding: 10px 14px;
+      border-top: 1px solid var(--rule);
+    }
+
+    .moves li:first-child {
+      border-top: 0;
+    }
+
+    @media (max-width: 420px) {
+      .moves li {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+      }
+    }
+
+    .chip {
+      justify-self: start;
+      font: 600 12px var(--font-mono);
+      letter-spacing: 0.04em;
+      color: var(--amber);
+      background: var(--well);
+      border-radius: 4px;
+      padding: 3px 8px;
+      white-space: nowrap;
+    }
+
+    .moves span:last-child {
+      text-wrap: pretty;
+    }
+
+    .aside {
+      display: grid;
+      gap: 18px;
+    }
+
+    .aside div {
+      display: grid;
+      gap: 8px;
+    }
+
+    .aside p,
+    .aside li {
+      font-size: var(--step--1);
+      color: var(--muted);
+    }
+
+    .keymap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 6px 12px;
+      align-items: center;
+      font-size: var(--step--1);
+      color: var(--muted);
+    }
+
+    .keymap dt {
+      white-space: nowrap;
+    }
+
+    .keymap dd {
+      margin: 0;
+    }
+
+    /* the help dialog: the same help, over the page or full screen */
+    dialog {
+      width: min(720px, calc(100vw - 24px));
+      max-height: calc(100dvh - 24px);
+      padding: 0;
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      background: var(--paper);
+      color: var(--ink);
+      box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6);
+    }
+
+    dialog::backdrop {
+      background: rgba(5, 7, 6, 0.7);
+    }
+
+    .dialog-head {
+      position: sticky;
+      top: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: var(--well);
+      color: var(--night-ink);
+      z-index: 1;
+    }
+
+    .dialog-head .btn {
+      color: var(--night-ink);
+      border-color: var(--night-rule);
+    }
+
+    .dialog-body {
+      padding: 18px;
+    }
+
+    dialog .howto {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 22px;
+    }
+
+    /* about: the longer story, the install line, the links */
+    .about {
+      display: grid;
+      gap: 16px;
+    }
+
+    .about .more {
+      max-width: 68ch;
+      color: var(--muted);
+      text-wrap: pretty;
+    }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .install {
+      display: grid;
+      gap: 8px;
+      justify-items: start;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      font-size: var(--step--1);
+      color: var(--muted);
+    }
+
+    .install .row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      max-width: 100%;
+    }
+
+    .install code {
+      font-family: var(--font-mono);
+      color: var(--night-ink);
+      background: var(--well);
+      border-radius: 6px;
+      padding: 6px 10px;
+      overflow-wrap: anywhere;
+      user-select: all;
+    }
+
+    /* under the hood: PARAMS, presets, log, REPL in a drawer fixed to the bottom of the window; only its
+       bar shows until it's opened, and its height is dragged from the handle on its top edge */
+    .hood {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 40;
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: 0 -12px 30px -14px rgba(0, 0, 0, 0.55);
+    }
+
+    .hood>summary {
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px 14px;
+      padding: 10px var(--gutter);
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      background: var(--well);
+      color: var(--night-ink);
+      border-top: 1px solid var(--night-rule);
+    }
+
+    .hood[open]>summary {
+      padding-bottom: 10px;
+    }
+
+    .hood>summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .hood>summary::before {
+      content: "▴";
+      font-family: var(--font-mono);
+      color: var(--amber);
+      transition: transform 0.15s;
+    }
+
+    .hood[open]>summary::before {
+      transform: rotate(180deg);
+    }
+
+    .hood>summary h2 {
+      font-size: 15px;
+    }
+
+    .hood>summary small {
+      color: var(--night-muted);
+      font-size: var(--step--1);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    @media (max-width: 560px) {
+      .hood>summary small {
+        display: none;
+      }
+    }
+
+    .hood>summary:focus-visible {
+      outline-color: var(--amber);
+      outline-offset: -3px;
+    }
+
+    .hood-grip {
+      position: absolute;
+      left: 50%;
+      top: -9px;
+      width: 64px;
+      height: 18px;
+      margin-left: -32px;
+      cursor: ns-resize;
+      touch-action: none;
+      z-index: 1;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+    }
+
+    .hood-grip::before {
+      content: "";
+      width: 44px;
+      height: 5px;
+      border-radius: 3px;
+      background: var(--night-muted);
+      box-shadow: 0 0 0 2px var(--well);
+    }
+
+    .hood-grip:hover::before,
+    .hood-grip:focus-visible::before {
+      background: var(--amber);
+    }
+
+    .hood-grip:focus-visible {
+      outline: none;
+    }
+
+    .badge {
+      font: 600 11px var(--font-mono);
+      color: #fff;
+      background: #b23b2a;
+      border-radius: 999px;
+      padding: 1px 8px;
+    }
+
+    .bench {
+      height: var(--drawer-h, 42vh);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 24px;
+      padding: 14px var(--gutter);
+      padding-bottom: max(14px, env(safe-area-inset-bottom));
+    }
+
+    /* side by side, PARAMS and the log fill the drawer's height */
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    #params,
+    .logbox {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .logbox {
+      display: flex;
+    }
+
+    #log {
+      flex: 1;
+    }
+
+    /* stacked on a narrow screen, the drawer scrolls */
+    @media (max-width: 760px) {
+      .bench {
+        grid-template-columns: minmax(0, 1fr);
+        grid-auto-rows: max-content;
+        overflow-y: auto;
+      }
+
+      #params {
+        flex: none;
+        max-height: 50vh;
+      }
+
+      .logbox {
+        flex: none;
+        height: 12rem;
+      }
+    }
+
+    .side h3 {
+      color: var(--muted);
+    }
+
+    .panel {
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      padding: 10px 12px;
+      min-width: 0;
+      background: var(--paper);
+    }
+
+    #params {
+      display: grid;
+      gap: 2px;
+      align-content: start;
+      overflow: auto;
+      font-family: var(--font-mono);
+      font-size: var(--step--1);
+    }
+
+    #params .sep {
+      margin: 10px 0 2px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    #params .sep:first-child {
+      margin-top: 0;
+    }
+
+    #params details {
+      border-top: 1px solid var(--rule);
+    }
+
+    #params summary {
+      cursor: pointer;
+      padding: 4px 0;
+      font-weight: 600;
+    }
+
+    #params details .param {
+      padding-left: 12px;
+    }
+
+    .param {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(5.5rem, auto) auto;
+      align-items: center;
+      gap: 6px;
+      padding: 1px 0;
+    }
+
+    .param .pname {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+    }
+
+    .param .pval {
+      text-align: center;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 11rem;
+    }
+
+    .param button {
+      font: inherit;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border: 1px solid var(--rule);
+      border-radius: 5px;
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .param button:hover {
+      border-color: var(--ink);
+    }
+
+    .param button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .param button.go {
+      width: auto;
+      padding: 0 10px;
+      grid-column: 2 / 5;
+      justify-self: start;
+    }
+
+    #log {
+      overflow: auto;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .logbox {
+      position: relative;
+    }
+
+    #log .error {
+      color: #b3261e;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) #log .error {
+        color: #f08a6b;
+      }
+    }
+
+    :root[data-theme="dark"] #log .error {
+      color: #f08a6b;
+    }
+
+    #log .engine {
+      color: var(--accent);
+    }
+
+    #log .repl {
+      color: var(--ink);
+    }
+
+    .logbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .logbar label,
+    .pset {
+      font-family: var(--font-mono);
+      font-size: var(--step--1);
+      color: var(--muted);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .pset select {
+      padding: 2px 4px;
+    }
+
+    .notes {
+      font-size: var(--step--1);
+      color: var(--muted);
+    }
+
+    .repl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: var(--step--1);
+      color: var(--muted);
+    }
+
+    .repl input {
+      flex: 1;
+      min-width: 0;
+      font: inherit;
+      color: var(--ink);
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 6px 8px;
+    }
+
+    .repl input:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    footer {
+      border-top: 1px solid var(--rule);
+      padding-block: 18px 36px;
+      font-size: var(--step--1);
+      color: var(--muted);
+    }
+
+    footer p {
+      max-width: 90ch;
+    }
+
+    @media (max-width: 560px) {
+      .night {
+        padding-top: 24px;
+      }
+
+      main {
+        gap: 44px;
+        padding-top: 36px;
+      }
+    }
+
+    /* "map": bind a param to one of a hosting plugin's automation slots */
+    .param.mappable {
+      grid-template-columns: minmax(0, 1fr) auto minmax(5.5rem, auto) auto auto;
+    }
+
+    .param button.map {
+      width: auto;
+      padding: 0 7px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .param button.map.on {
+      color: var(--night);
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+
+    /* hosted: the face of a plugin that runs the script and its sound itself. The device and
+       its controls, and the drawer; nothing about the web page (sound, gallery, about) */
+    body.hosted #sound,
+    body.hosted #full-sound,
+    body.hosted .lede,
+    body.hosted main > section,
+    body.hosted #about-footer,
+    body.hosted .logbar label:has(#show-engine) {
+      display: none !important;
+    }
+
+    body.hosted main {
+      padding: 0;
+    }
+
+    body.hosted .night {
+      min-height: calc(100vh - var(--hood-space, 48px));
+      padding-top: 20px;
+    }
+
+    body.hosted header {
+      gap: 2px;
+    }
+
+    body.hosted h1 {
+      font-size: 26px;
+    }
+
+    body.hosted h1 .mark {
+      height: 32px;
+    }
+
+    /* a plugin's window doesn't scroll: the device fits its height (the screen keeps 2:1) */
+    html:has(body.hosted),
+    body.hosted {
+      overflow: hidden;
+    }
+
+    body.hosted .hint {
+      display: none;
+    }
+
+    body.hosted .night .wrap {
+      gap: 16px;
+    }
+
+    /* norns-web.js zooms the device and its buttons to the window's height (--fit) */
+    body.hosted .frame,
+    body.hosted .controls {
+      zoom: var(--fit, 1);
+    }
+
+    /* the drawer at the right (a plugin with set_extra_width): a tab along the right edge, and
+       open, PARAMS above the log, as wide as dragged; the window grows wider by it */
+    body.side-drawer {
+      padding-bottom: 0;
+      padding-right: var(--hood-space-x, 40px);
+    }
+
+    body.side-drawer.hosted .night {
+      min-height: 100vh;
+    }
+
+    body.side-drawer .hood {
+      top: 0;
+      bottom: 0;
+      left: auto;
+      right: 0;
+      width: 40px;
+      box-shadow: -12px 0 30px -14px rgba(0, 0, 0, 0.55);
+    }
+
+    body.side-drawer .hood[open] {
+      width: calc(40px + var(--drawer-w, 440px));
+    }
+
+    body.side-drawer .hood>summary {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 40px;
+      padding: 16px 0;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      writing-mode: vertical-rl;
+      border-top: 0;
+      border-left: 1px solid var(--night-rule);
+    }
+
+    body.side-drawer .hood>summary::before {
+      content: "◂";
+      writing-mode: horizontal-tb;
+    }
+
+    body.side-drawer .hood>summary h2 {
+      font-size: 13px;
+      letter-spacing: 0.1em;
+    }
+
+    body.side-drawer .hood>summary small {
+      display: none;
+    }
+
+    body.side-drawer .bench {
+      margin-left: 40px;
+      width: var(--drawer-w, 440px);
+      height: 100vh;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1.3fr) minmax(0, 1fr);
+      grid-auto-rows: unset;
+      gap: 18px;
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    body.side-drawer #params,
+    body.side-drawer .logbox {
+      flex: 1;
+      height: auto;
+      max-height: none;
+    }
+
+    body.side-drawer .hood-grip {
+      left: 40px;
+      top: 50%;
+      width: 18px;
+      height: 64px;
+      margin: -32px 0 0 -9px;
+      cursor: ew-resize;
+    }
+
+    body.side-drawer .hood-grip::before {
+      width: 5px;
+      height: 44px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="night" id="night">
+    <canvas id="sky" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <header>
+        <h1 id="script-name">norns-web</h1>
+        <p class="subtitle" id="subtitle" hidden></p>
+        <p class="lede">A norns script, running in your browser. Press Start sound, then turn the knobs and press
+          the keys.</p>
+      </header>
+
+      <div class="frame" id="frame">
+        <canvas class="full-sky" id="full-sky" aria-hidden="true"></canvas>
+        <div class="norns" id="device" data-shell="shield" data-finish="alu">
+          <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+          <span class="brand">norns</span>
+          <div class="ctl c-k1"><button class="key" data-k="1" aria-label="K1"><span class="cap"></span></button><small>K1</small></div>
+          <div class="ctl c-e1"><button class="enc" data-e="1" aria-label="E1"><span class="knurl"></span><span class="face"></span><span class="light"></span></button><small>E1</small></div>
+          <div class="screen"><canvas id="oled" width="128" height="64" aria-label="norns screen"></canvas></div>
+          <div class="ctl c-k2"><button class="key" data-k="2" aria-label="K2"><span class="cap"></span></button><small>K2</small></div>
+          <div class="ctl c-k3"><button class="key" data-k="3" aria-label="K3"><span class="cap"></span></button><small>K3</small></div>
+          <div class="ctl c-e2"><button class="enc" data-e="2" aria-label="E2"><span class="knurl"></span><span class="face"></span><span class="light"></span></button><small>E2</small></div>
+          <div class="ctl c-e3"><button class="enc" data-e="3" aria-label="E3"><span class="knurl"></span><span class="face"></span><span class="light"></span></button><small>E3</small></div>
+        </div>
+        <div class="full-hint" id="full-hint" role="status" hidden>
+          <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><rect x="6" y="2" width="8" height="16" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 15.5h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Turn your phone sideways for a bigger norns
+        </div>
+        <!-- in full screen, the controls below are out of view: sound, the script's actions, help and a way back stay in the corner -->
+        <div class="full-bar">
+          <button type="button" class="btn primary" id="full-sound" aria-pressed="false"><span class="lbl">Start
+              sound</span></button>
+          <span class="group" id="full-actions"></span>
+          <button type="button" class="btn icon" data-help aria-label="How to play" title="How to play">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6.1 6.2a2 2 0 1 1 2.6 1.9c-.5.2-.7.5-.7 1v.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11.6" r=".9" fill="currentColor"/></svg>
+          </button>
+          <button type="button" class="btn icon" id="full-exit" aria-label="Leave full screen"
+            title="Leave full screen">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6 1v5H1M10 1v5h5M6 15v-5H1M10 15v-5h5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button type="button" class="btn primary" id="sound" aria-pressed="false">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 6h3l4-3.5v11L5 10H2z" fill="currentColor"/><path d="M11.3 5.2a4 4 0 0 1 0 5.6M13.2 3.3a6.7 6.7 0 0 1 0 9.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span class="lbl">Start sound</span>
+        </button>
+        <span class="group" id="actions"></span>
+        <span class="group">
+          <button type="button" class="btn" data-help>
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6.1 6.2a2 2 0 1 1 2.6 1.9c-.5.2-.7.5-.7 1v.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11.6" r=".9" fill="currentColor"/></svg>
+            How to play
+          </button>
+          <button type="button" class="btn" id="full" title="Full screen: just the norns">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M1 6V1h5M15 6V1h-5M1 10v5h5M15 10v5h-5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+            Full screen
+          </button>
+          <details class="menu">
+            <summary class="btn" title="How the norns looks">
+              <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1.5" y="3" width="13" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="4" y="5.5" width="5" height="3" fill="currentColor"/><circle cx="11.5" cy="7" r="1.2" fill="currentColor"/></svg>
+              Look
+            </summary>
+            <div class="pop">
+              <label>the device <select id="v-shell">
+                  <option value="shield">shield (compact)</option>
+                  <option value="norns">norns</option>
+                </select></label>
+              <label>the case <select id="v-finish">
+                  <option value="alu">aluminium</option>
+                  <option value="black">black</option>
+                </select></label>
+              <label>the screen <select id="v-screen">
+                  <option value="yellow">yellow</option>
+                  <option value="white">white</option>
+                </select></label>
+            </div>
+          </details>
+        </span>
+      </div>
+      <p class="hint">
+        <span class="kb">Turn a knob with the scroll wheel or by dragging it up and down, or play from the keyboard:
+          <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> are the keys, <kbd>?</kbd> shows them all.</span>
+        <span class="touch">Drag a knob up and down to turn it. You can hold a key with one finger and turn a knob with
+          another.</span>
+      </p>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <section id="gallery-section" aria-labelledby="gallery-title" hidden>
+      <h2 id="gallery-title">What's inside</h2>
+      <p class="section-lede" id="gallery-lede" hidden></p>
+      <ul class="gallery" id="gallery"></ul>
+    </section>
+
+    <section aria-labelledby="howto-title">
+      <h2 id="howto-title">How to play</h2>
+      <div id="howto"></div>
+    </section>
+
+    <section id="downloads-section" aria-labelledby="downloads-title" hidden>
+      <h2 id="downloads-title">Downloads</h2>
+      <p class="section-lede" id="downloads-lede" hidden></p>
+      <ul class="downloads" id="downloads"></ul>
+      <nav class="links" id="downloads-links" aria-label="more about the downloads" hidden></nav>
+    </section>
+
+    <section class="about" id="about" aria-labelledby="about-title" hidden>
+      <h2 id="about-title">About</h2>
+      <p class="more" id="more" hidden></p>
+      <div class="install" id="install" hidden>
+        <span>Have a norns? Install it from maiden:</span>
+        <span class="row"><code id="install-cmd"></code><button type="button" class="btn small"
+            id="install-copy">copy</button></span>
+      </div>
+      <nav class="links" id="links" aria-label="links"></nav>
+    </section>
+
+  </main>
+
+  <footer class="wrap" id="about-footer" hidden></footer>
+
+  <!-- a drawer at the bottom of the window -->
+    <details class="hood" id="hood">
+      <summary>
+        <h2>Under the hood</h2>
+        <small>every parameter, presets, the log and a Lua console, for tinkering beside the norns</small>
+        <span class="badge" id="hood-badge" hidden></span>
+      </summary>
+      <div class="hood-grip" id="hood-grip" role="separator" aria-orientation="horizontal" tabindex="0"
+        aria-label="Resize the drawer" title="Drag to resize"></div>
+      <div class="bench">
+        <section class="side" aria-label="PARAMS">
+          <div class="logbar">
+            <h3>PARAMS</h3>
+            <div class="pset"><label for="pset-slot">PSET</label>
+              <select id="pset-slot">
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>4</option>
+                <option>5</option>
+                <option>6</option>
+                <option>7</option>
+                <option>8</option>
+              </select>
+              <button type="button" class="btn small" id="pset-save">save</button><button type="button"
+                class="btn small" id="pset-load">load</button>
+            </div>
+          </div>
+          <div class="panel" id="params" aria-live="off"></div>
+          <p class="notes">Scroll on a param or use − and +; hold Shift for bigger steps.</p>
+        </section>
+        <section class="side" aria-label="Log">
+          <div class="logbar">
+            <h3>Log</h3><label><input type="checkbox" id="show-engine"> engine commands</label>
+          </div>
+          <div class="logbox">
+            <div class="panel" id="log" role="log"></div>
+          </div>
+          <form id="repl-form" class="repl" autocomplete="off">
+            <label for="repl" class="visually-hidden">Lua</label>
+            <span aria-hidden="true">&gt;&gt;</span><input id="repl" spellcheck="false"
+              placeholder="Lua, like the maiden REPL (↑ ↓ for history)">
+          </form>
+        </section>
+      </div>
+    </details>
+
+  <dialog id="help" aria-labelledby="help-title">
+    <div class="dialog-head">
+      <h2 id="help-title">How to play</h2>
+      <form method="dialog"><button class="btn small" aria-label="Close">close</button></form>
+    </div>
+    <div class="dialog-body" id="help-body"></div>
+  </dialog>
+
+  <script>window.NORNS_WEB_WASMOON = "vendor/wasmoon/"; /* the build can point this at a CDN */</script>
+  <script src="vendor/wasmoon/index.js"></script>
+  <script src="norns-web.js"></script>
+</body>
+
+</html>
