@@ -11,8 +11,8 @@
 -- metro, util, tab, include, norns,
 -- engine commands (sent to a JS stand-in, lib/Engine_<name>.js, if any), and one
 -- built-in nb voice ("web synth") for scripts that use nb.
--- midi out (when the host has ports: a plugin's); grid, arc, softcut, crow, poll and the rest
--- are silent stubs.
+-- midi out (when the host has ports: a plugin's), polls (answered by the stand-in's poll(name));
+-- grid, arc, softcut, crow and the rest are silent stubs.
 
 local W, H = 128, 64
 local js = js_bridge -- set by norns-web.js: engine(), log(), os_capture()
@@ -538,8 +538,39 @@ local function midi_device(port)
   return d
 end
 function midi.connect(port) return midi_device(port or 1) end
-grid, arc, hid, crow, softcut, audio, poll, osc, keyboard, gamepad = stub("grid"), stub("arc"), stub("hid"),
-  stub("crow"), stub("softcut"), stub("audio"), stub("poll"), stub("osc"), stub("keyboard"), stub("gamepad")
+grid, arc, hid, crow, softcut, audio, osc, keyboard, gamepad = stub("grid"), stub("arc"), stub("hid"),
+  stub("crow"), stub("softcut"), stub("audio"), stub("osc"), stub("keyboard"), stub("gamepad")
+
+-- ---------- poll: values from the engine stand-in ----------
+-- As on norns: p = poll.set(name, callback); p.time = seconds; p:start(). Each running poll asks
+-- the stand-in's poll(name) on its own timer (js.poll); no answer (nil) skips the callback.
+local polls = {}
+poll = {}
+function poll.set(name, callback)
+  local p = { name = name, callback = callback, time = 0.25, running = false, last = 0 }
+  function p:start() self.running = true; self.last = now end
+  function p:stop() self.running = false end
+  function p:update()
+    local v = js.poll and js.poll(self.name)
+    if v ~= nil and self.callback then self.callback(v) end
+  end
+  polls[name] = p
+  return p
+end
+function poll.list_names()
+  local names = {}
+  for name in pairs(polls) do names[#names + 1] = name end
+  table.sort(names)
+  return names
+end
+local function run_polls()
+  for _, p in pairs(polls) do
+    if p.running and now - p.last >= p.time then
+      p.last = now
+      p:update()
+    end
+  end
+end
 _menu = { rebuild_params = function() end, redraw = function() end }
 wifi = stub("wifi")
 
@@ -578,6 +609,7 @@ function norns_web.tick(t)
   now = t
   if running then guarded(run_clocks) end
   guarded(run_metros)
+  guarded(run_polls)
   if dirty then
     dirty = false
     return frame_string()

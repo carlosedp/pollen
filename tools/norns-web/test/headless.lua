@@ -21,6 +21,7 @@ js_bridge = {
   midi_ports = function() return nil end,
   midi_send = function() end,
   nb = function() end,
+  poll = function(name) if name == "__check" then return 0.5 end end,
 }
 
 dofile("lib/norns.lua")
@@ -36,6 +37,14 @@ for i = 1, seconds * fps do
   end
 end
 assert(load("return " .. norns_web.params_json()) or true) -- params_json must not throw
+
+-- polls: one asks the stand-in (js.poll) on its own timer and hands the value to its callback
+local got, t0 = nil, seconds
+local p = poll.set("__check", function(v) got = v end)
+p.time = 0.1
+p:start()
+for i = 1, 30 do norns_web.tick(t0 + i / 60) end
+assert(got == 0.5, "poll: the callback never got the stand-in's value")
 
 print(string.format("%s: %d frames in %d s, %d error(s)", name, frames, seconds, #errors))
 if #errors > 0 or frames == 0 then os.exit(1) end

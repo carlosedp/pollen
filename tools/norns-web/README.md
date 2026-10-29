@@ -6,7 +6,8 @@ engine. How close the sound is depends on the stand-in: a sketch, or the real DS
 to WebAssembly.
 
 It knows nothing about any one script. Any script that sticks to `screen`, `params`, `clock`,
-`metro` and engine commands should run; midi, grid, arc, softcut, crow and poll are silent stubs.
+`metro` and engine commands should run; polls come from the engine stand-in; midi, grid, arc, softcut and
+crow are silent stubs.
 It started inside [terrarium](https://github.com/carlosedp/terrarium), which is still the most
 complete example (an engine stand-in on real mi-UGens, a plugin that uses this page as its face).
 
@@ -155,8 +156,9 @@ with no Lua files and the script's `norns-web.json` as `about`). terrarium's plu
 When the script sets `engine.name = "X"`, the page loads `lib/Engine_X.js` from the script (norns
 ignores that file). It registers a factory that returns an object with one method per engine
 command, plus optional `start(ctx, out)` (called when the page's sound is switched on, with an
-`AudioContext` and an output node) and `os_capture(cmd)` (answers `util.os_capture`, for scripts
-that look for files on norns):
+`AudioContext` and an output node), `os_capture(cmd)` (answers `util.os_capture`, for scripts
+that look for files on norns) and `poll(name)` (a number for the script's `poll.set(name, f)`, as
+the engine's `addPoll` would give; asked on each poll's own `time`):
 
 ```js
 NornsWeb.engines.X = () => ({
