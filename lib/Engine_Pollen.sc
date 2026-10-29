@@ -20,7 +20,8 @@
 //   reel(seconds)     a new, empty reel of that length (the grains loop over all of it)
 //   clear()           silence the reel
 //
-// Polls: amp_in (the input's level, to tell a dead stream) and head (the write head, in s).
+// Polls: amp_in (the input's level, to tell a dead stream), amp_reel (the level of what is
+// written onto the reel: the screen draws the tape from it) and head (the write head, in s).
 //
 // MiVerb (mi-UGens) is the reverb when installed, looked up by name at runtime: a missing
 // class must never be written in this file (it would fail SuperCollider for every script).
@@ -28,7 +29,7 @@
 // MIT); see doc/DESIGN.md.
 
 Engine_Pollen : CroneEngine {
-	var group, bufs, envBufs, headBus, ampBus, dryBus, wetBus, fbBus;
+	var group, bufs, envBufs, headBus, ampBus, reelBus, dryBus, wetBus, fbBus;
 	var writer, grains, outSynth;
 
 	*new { arg context, doneCallback;
@@ -41,6 +42,7 @@ Engine_Pollen : CroneEngine {
 
 		headBus = Bus.control(s, 1);
 		ampBus = Bus.control(s, 1);
+		reelBus = Bus.control(s, 1);
 		dryBus = Bus.audio(s, 2);
 		wetBus = Bus.audio(s, 2);
 		fbBus = Bus.audio(s, 2);
@@ -55,7 +57,7 @@ Engine_Pollen : CroneEngine {
 
 		group = Group.new(context.xg);
 		writer = Synth(\pollen_writer, [\inL, context.in_b[0].index, \inR, context.in_b[1].index,
-			\bufL, bufs[0], \bufR, bufs[1], \headBus, headBus, \ampBus, ampBus,
+			\bufL, bufs[0], \bufR, bufs[1], \headBus, headBus, \ampBus, ampBus, \reelBus, reelBus,
 			\dryBus, dryBus, \fbBus, fbBus], group);
 		grains = Synth.after(writer, \pollen_grains, [\bufL, bufs[0], \bufR, bufs[1], \headBus, headBus,
 			\out, wetBus, \fbBus, fbBus, \penv, envBufs[0], \benv, envBufs[1]]);
@@ -64,6 +66,7 @@ Engine_Pollen : CroneEngine {
 
 		this.addCommands;
 		this.addPoll(\amp_in, { ampBus.getSynchronous });
+		this.addPoll(\amp_reel, { reelBus.getSynchronous });
 		this.addPoll(\head, { headBus.getSynchronous / context.server.sampleRate });
 	}
 
@@ -76,7 +79,7 @@ Engine_Pollen : CroneEngine {
 		// the writer: a loop the length of the reel. Frozen, the head stops and writes back
 		// what is there (no change). The grains come back in through fb, and what's written is
 		// soft-clipped (linear below 0.5), so cross-pollination can't pile up past full scale.
-		SynthDef(\pollen_writer, { |inL, inR, bufL, bufR, headBus, ampBus, dryBus, fbBus,
+		SynthDef(\pollen_writer, { |inL, inR, bufL, bufR, headBus, ampBus, reelBus, dryBus, fbBus,
 			adc = 1, freeze = 0, fb = 0|
 			var run = freeze < 0.5;
 			var head = Phasor.ar(0, run, 0, BufFrames.kr(bufL));
@@ -88,6 +91,8 @@ Engine_Pollen : CroneEngine {
 			BufWr.ar(w[1], bufR, head);
 			Out.kr(headBus, A2K.kr(head));
 			Out.kr(ampBus, Amplitude.kr(in.sum * 0.5, 0.05, 0.5));
+			// what goes onto the tape (input and cross-pollination); nothing while pressed
+			Out.kr(reelBus, Amplitude.kr((w[0] + w[1]) * 0.5 * run, 0.01, 0.1));
 			Out.ar(dryBus, in);
 		}).add;
 
@@ -179,6 +184,6 @@ Engine_Pollen : CroneEngine {
 		group !? { group.free };
 		bufs.do(_.free);
 		envBufs.do(_.free);
-		[headBus, ampBus, dryBus, wetBus, fbBus].do { |b| b !? { b.free } };
+		[headBus, ampBus, reelBus, dryBus, wetBus, fbBus].do { |b| b !? { b.free } };
 	}
 }

@@ -45,9 +45,11 @@ from Clouds and Rings; without them, FreeVerb2.
 | tone    | color · drive    | one-knob filter (left closes a low-pass, right opens a high-pass); saturation |
 | air     | space · mix      | the reverb; from the live input alone to the grains alone                     |
 
-The screen is the bloom. The reel is a ring; the write head sweeps around it; grains leave it as
-pollen, from where they're read (the short arc inside the ring), flying as fast as they're
-pitched. Pressed, the sweep stops and the ring holds still. The haze around it is the reverb. Every
+The screen is the bloom. The reel is a ring of tape: the waveform of what it caught, bent around,
+brightest just behind the write head that sweeps it (older sound dims; what isn't caught yet is a
+faint dotted line). Grains leave it as pollen, from where they're read (the short arc inside the
+ring), as bright as the tape is loud there and flying as fast as they're pitched; silence throws
+none. Pressed, the sweep stops and the whole loop holds evenly lit. The haze around it is the reverb. Every
 macro, variety and gesture is also in PARAMS, so it saves with PSETs and can be MIDI-mapped.
 
 ## How it's built

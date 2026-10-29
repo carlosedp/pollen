@@ -94,7 +94,7 @@ Routine {
 	~r = measure.(1);
 	check.("cleared, input gone: silence", ~r[0] < 0.002, ~r);
 
-	[\amp_in, \head].do { |p|
+	[\amp_in, \amp_reel, \head].do { |p|
 		var v = eng.polls[p].value;
 		check.("poll " ++ p ++ " is a number", v.isNumber and: { v.isNaN.not }, [v ? 0, 0]);
 	};

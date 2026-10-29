@@ -46,6 +46,12 @@ local held = { false, false, false } -- K1, K2, K3
 local k2_used = false
 local burst, static_env = 0, 0
 local head, filled = 0, 0 -- the write head and how much of the reel is caught (s), mirrored
+-- the tape: the loudest level written to each of WAVE segments of the reel, as the head last
+-- passed it (from the engine's amp_reel poll); a pressed reel keeps what's there
+local WAVE = 96
+local wave, last_seg = {}, nil
+local function wipe() for i = 1, WAVE do wave[i] = 0 end; last_seg = nil end
+wipe()
 local sent = {}
 local reel_now = 15 -- the engine's reel (s)
 local shown = { part = 0, e2 = 0, e3 = 0, word = 0 } -- seconds left for each overlay
@@ -86,6 +92,26 @@ end
 
 local function say(w) word, shown.word = w, 1.2 end
 
+-- a level from the engine: onto the segment under the head, and any the head skipped since
+-- (a few at most: a head that jumps, as when the engine's head poll corrects the mirror, just
+-- starts again where it is)
+local function catch_level(a)
+  if m("catch_press") == 1 then return end
+  local seg = math.floor(head / S.REELS[m("catch_reel")] * WAVE) % WAVE + 1
+  if seg ~= last_seg then
+    local gap = last_seg and (seg - last_seg) % WAVE or 0
+    local i = (gap > 0 and gap <= 8) and last_seg % WAVE + 1 or seg
+    while true do
+      wave[i] = a
+      if i == seg then break end
+      i = i % WAVE + 1
+    end
+    last_seg = seg
+  else
+    wave[seg] = math.max(wave[seg], a)
+  end
+end
+
 -- ---------- params ----------
 
 local function add_params()
@@ -107,6 +133,7 @@ local function add_params()
         reel_now = S.REELS[i]
         engine.reel(reel_now)
         head, filled = 0, 0
+        wipe()
         bloom.reset()
         send()
       end)
@@ -138,6 +165,7 @@ local function add_params()
   params:set_action("clear", function()
     engine.clear()
     filled = 0
+    wipe()
     bloom.reset()
   end)
 end
@@ -200,6 +228,7 @@ local function look()
     space = m("air_space"), hazed = m("air_haze") == 1,
     color = m("tone_color"), drive = e.drive, media = m("tone_media"),
     static = math.max(m("static"), static_env),
+    wave = wave,
   }
 end
 
@@ -264,11 +293,16 @@ function init()
   add_params()
   params:bang()
   send()
-  -- on a norns, the engine tells where its write head really is (the mirror drifts)
-  local p = poll.set("head", function(v) head = v end)
-  if p then
-    p.time = 0.5
-    p:start()
+  -- the engine tells where its write head really is (the mirror drifts) and what it writes
+  local ph = poll.set("head", function(v) head = v end)
+  if ph then
+    ph.time = 0.5
+    ph:start()
+  end
+  local pr = poll.set("amp_reel", catch_level)
+  if pr then
+    pr.time = 1 / 30
+    pr:start()
   end
   redraw_metro = metro.init(tick, 1 / FPS)
   redraw_metro:start()

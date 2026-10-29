@@ -12,7 +12,8 @@ const DEFAULTS = Function(`return ${src.match(/const DEFAULTS = ({[\s\S]*?});/)[
 
 const SR = 48000, BLOCK = 128;
 const procs = {};
-class AudioWorkletProcessor { constructor() { this.port = { onmessage: null }; } }
+const reports = [];
+class AudioWorkletProcessor { constructor() { this.port = { onmessage: null, postMessage: m => reports.push(m) }; } }
 Function("AudioWorkletProcessor", "registerProcessor", "sampleRate", PROCESSOR)(
   AudioWorkletProcessor, (name, cls) => { procs[name] = cls; }, SR);
 
@@ -100,6 +101,12 @@ send({ clear: true }); inputOn = false;
 render(0.1); // what was already on its way out (the limiter looks 10 ms ahead)
 r = render(1);
 check("cleared, input gone: silence", r.rms < 0.002, r);
+
+// the polls it reports: numbers, the reel's level up while it's caught something
+const last = reports[reports.length - 1];
+check("polls: amp_in, amp_reel and head reported",
+  reports.length > 100 && ["amp_in", "amp_reel", "head"].every(k => Number.isFinite(last[k])), { rms: reports.length, peak: 0 });
+check("  amp_reel follows the tape", reports.some(m => m.amp_reel > 0.05), { rms: Math.max(...reports.map(m => m.amp_reel)), peak: 0 });
 
 if (fails.length) { console.log(`${fails.length} failed`); process.exit(1); }
 console.log("all ok");

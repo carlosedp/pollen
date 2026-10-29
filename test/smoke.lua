@@ -29,6 +29,8 @@ js_bridge = {
   storage_get = function() end,
   storage_set = function() end,
   nb = function() end,
+  -- the engine's polls: a reel level that comes and goes (music with gaps), the head as Lua has it
+  poll = function(name) if name == "amp_reel" then return (math.sin(os.clock() * 50) + 1) * 0.2 end end,
 }
 dofile("tools/norns-web/lib/norns.lua")
 norns_web.boot("pollen", "pollen.lua", "./")
