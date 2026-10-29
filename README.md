@@ -12,9 +12,10 @@ the wind, and catch each one on a reel that it scatters as grains, in the spirit
 Morphagene and Endorphin.es Evil Pet. See [docs/DESIGN.md](docs/DESIGN.md) for the idea and
 [docs/SPEC.md](docs/SPEC.md) for the plumbing.
 
-> **Version 0 (in development).** The reel and the grains play, on the norns input (in the browser,
-> a made-up broadcast). The radio, the globe and the seed vault come next. The engine passes its
-> tests on a real SuperCollider server, but nothing has run on a norns yet.
+> **Version 0.2 (in development).** The radio plays: stations from radio-browser.info, the wind
+> carrying you between them, each one caught on the reel and scattered as grains. The globe view
+> and the seed vault come next. The engine passes its tests on a real SuperCollider server and the
+> radio plays in the browser, but nothing has run on a norns yet.
 
 ## Install
 
@@ -24,26 +25,37 @@ From the maiden REPL:
 ;install https://github.com/carlosedp/pollen
 ```
 
-Nothing else is needed for v0. mi-UGens are optional: with them, the reverb is MiVerb, the reverb
+The radio needs **mpv** and **socat** on the norns (over ssh: `sudo apt install -y mpv socat`;
+mpv brings its ffmpeg libraries along). Without them pollen still plays, on the norns input, and
+the screen says what's missing. mi-UGens are optional: with them, the reverb is MiVerb, the reverb
 from Clouds and Rings; without them, FreeVerb2.
 
 ## Controls
 
 | Control      | Does                                                                                     |
 | ------------ | ---------------------------------------------------------------------------------------- |
-| E1           | choose a part: catch, scatter, tint, tone, air                                           |
+| E1           | choose a part: wind, catch, scatter, tint, tone, air                                     |
 | E2, E3       | that part's two macros (their names show for a moment while you turn them)               |
-| K3           | its gesture: press the reel (catch), a burst (scatter), backwards (tint), static (tone), hold the haze (air) |
-| hold K2 + E2 | its variety: reel length (catch), grain envelope (scatter), scale (tint), media (tone)   |
-| hold K1      | peek: every part and where its macros are                                                |
+| K2           | drift: the wind moves on to the next station                                             |
+| K3           | its gesture: drift (wind), press the reel (catch), a burst (scatter), backwards (tint), static (tone), hold the haze (air) |
+| hold K2 + E2 | its variety: the wind (wind), reel length (catch), grain envelope (scatter), scale (tint), media (tone) |
+| hold K1      | peek: every part and where its macros are, and the station                               |
+| hold K1 + K2 | back to the station before                                                               |
 
 | Part    | E2 · E3          | What it does                                                                  |
 | ------- | ---------------- | ----------------------------------------------------------------------------- |
+| wind    | pace · reach     | how often it moves on by itself (from still, by hand only, to every 4 beats of the norns clock); how far a move goes |
 | catch   | memory · cross   | how far back into the reel the grains reach; how much of them is written back in (cross-pollination) |
 | scatter | density · size   | how many grains, how long each one is                                         |
 | tint    | pitch · spread   | their pitch in the scale; how far it scatters, and past the middle, some backwards |
 | tone    | color · drive    | one-knob filter (left closes a low-pass, right opens a high-pass); saturation |
 | air     | space · mix      | the reverb; from the live input alone to the grains alone                     |
+
+**The wind** picks the next station: a *breeze* drifts to one of the nearest, a *trade wind*
+carries on along one bearing, an *eddy* wanders, a *gust* goes anywhere, the *far side* jumps to
+the other side of the world and back. Moving to a station presses the reel and plays a little
+static, so the last station keeps sounding as grains until the next one is caught; a station that
+doesn't play in time is skipped. Its name and place show as you arrive (and on a K1 peek).
 
 The screen is the bloom. The reel is a ring of tape: the waveform of what it caught, bent around,
 brightest just behind the write head that sweeps it (older sound dims; what isn't caught yet is a
@@ -58,6 +70,11 @@ macro, variety and gesture is also in PARAMS, so it saves with PSETs and can be 
 pollen.lua               the script: parts, params, controls, the picture
 lib/sound.lua            every macro -> engine parameter mapping (where the sound is tuned)
 lib/bloom.lua            the bloom: the reel as a ring, the pollen
+lib/radio.lua            the radio: tuning a station (press, static, load, crossfade, release)
+lib/stations.lua         the stations, from radio-browser.info, cached on the norns
+lib/player.lua           two mpv players, over JACK into the engine, driven through socat
+lib/walker.lua           the wind: where to go next (great circles, nearest, antipodes)
+lib/json.lua             JSON, decode and encode
 lib/Engine_Pollen.sc     the engine: writer -> reel -> grains -> filter, drive, media, reverb, limiter
 lib/Engine_Pollen.js     the same engine for the browser (norns ignores it)
 lib/Engine_Pollen/       MiVerb as WebAssembly, for the browser (from norns-mi-UGens)
@@ -91,6 +108,18 @@ pollen is made by [Voltage Foundry Modular](https://vfmod.com). © 2026 Voltage 
   [mi-UGens](https://github.com/v7b1/mi-UGens) (GPL-3.0); the browser carries it as WebAssembly,
   built by [norns-mi-UGens](https://github.com/carlosedp/norns-mi-UGens) (`lib/Engine_Pollen/BUILDINFO`).
 - [wasmoon](https://github.com/ceifa/wasmoon) (MIT) is vendored in `tools/norns-web`.
+- **The stations** come from [radio-browser.info](https://www.radio-browser.info), a community
+  database; pollen fetches its list at most once a week and identifies itself when it does. The
+  streams are the stations' own; pollen plays them live and never redistributes them.
 - Mutable Instruments, Make Noise, Endorphin.es, monome, norns and Radio Garden are trademarks of
   their owners, named only to say what pollen works with or was inspired by. No affiliation or
   endorsement is implied.
+
+## To do on hardware
+
+- [ ] the engine loads and sounds; CPU on a CM3 with the densest grains and the radio playing
+- [ ] mpv into SuperCollider over JACK: `jack_lsp -c` while a station plays should show
+  `pollen_a:out_0 -> SuperCollider:in_1` (`P.JACK_TO` in `lib/player.lua` if the names differ)
+- [ ] mpv's CPU with two players, and how long a station takes to start
+- [ ] the first fetch and parse of the stations on a norns (about 2 MB of JSON)
+- [ ] tune the macros by ear (`lib/sound.lua`)

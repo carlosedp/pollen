@@ -4,9 +4,12 @@ A norns script: live radio from around the globe, caught on a reel and scattered
 idea, vocabulary and decisions are in docs/DESIGN.md (read it before changing behavior); the
 plumbing (backends, mpv, JACK, walker) is docs/SPEC.md. README.md is the player's view.
 
-**Status:** v0, in development. The reel engine (`lib/Engine_Pollen.sc`) and its browser twin play
-on the norns input / a demo broadcast; five parts (catch, scatter, tint, tone, air) drive it. Not
-yet: the radio (backends, mpv player), the walker and its globe view, the seed vault, crow/grid.
+**Status:** v0.2, in development. The radio plays: radio-browser stations (`lib/stations.lua`,
+cached), two mpv players over JACK (`lib/player.lua`), the wind (`lib/walker.lua`) and the tuning
+sequence (`lib/radio.lua`); six parts (wind, catch, scatter, tint, tone, air) drive the reel engine.
+In the browser the same Lua tunes real stations (the stand-in plays mpv's part). Not yet: the
+globe view (visuals are to be revisited: the bloom reads as too abstract), Radio Garden, the seed
+vault, norns-deps for installing mpv/socat, crow/grid.
 Never run on a norns: the Lua passes the smoke test; the engine passes `make test-sc` on scsynth
 3.13 (with the FreeVerb2 fallback: MiVerb is untested in SuperCollider).
 
@@ -37,6 +40,11 @@ make web       # the real script in a browser at http://localhost:8800/
 - **No numbers on screen.** The bloom is the readout; names show briefly on touch; hold K1 peeks.
 - Params group sizes are declared up front (`counts` in `add_params`); the smoke test checks them.
   Add new options at the end of their lists (`lib/sound.lua`), so saved PSETs keep their choices.
+- **The radio runs programs through `norns.system_cmd`** (curl, mpv, socat, pkill): a new command
+  shape must be answered by `Engine_Pollen.js`'s `system_cmd()` (mpv, socat, pkill; curl is
+  norns-web's) and by the fake mpv in `test/smoke.lua`, or the browser and the test break.
+  `lib/radio.lua` is stateful: include it only from `pollen.lua`.
+- The radio's commands never block: `util.os_capture` only for `command -v` at start.
 - `tools/norns-web` is a **git subtree** of github.com/carlosedp/norns-web: keep it generic,
   commit changes to it apart from pollen's, send them back with `make norns-web-push BRANCH=...`.
   `git subtree` here needs GNU `dirname` (the Makefile handles it; uutils' breaks the prefix).

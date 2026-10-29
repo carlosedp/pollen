@@ -6,12 +6,14 @@
 -- E1 choose a part
 -- E2 E3 shape it
 -- K3 its gesture
+-- K2 drift to the next station
 -- hold K2 + E2: its variety
 -- hold K1: peek
+-- hold K1 + K2: back a station
 --
--- v0: the reel and the grains,
--- on the norns input.
--- the radio comes next.
+-- needs mpv and socat for the
+-- radio; without them, it
+-- plays the norns input
 --
 -- by Voltage Foundry Modular
 -- vfmod.com
@@ -23,12 +25,16 @@ engine.name = "Pollen"
 
 local S = include("lib/sound")
 local bloom = include("lib/bloom")
+local radio = include("lib/radio")
+local W = include("lib/walker")
 
 local FPS = 15
 
 -- the parts of pollen, each with two macros (E2, E3), a gesture (K3) and a variety
 -- (hold K2 + E2). A gesture that holds a state keeps it in a param, so presets save it.
 local PARTS = {
+  { id = "wind", macros = { "pace", "reach" }, defaults = { 0.2, 0.3 },
+    gesture = "drift", variety = "wind_kind" },
   { id = "catch", macros = { "memory", "cross" }, defaults = { 0.3, 0.2 },
     gesture = "press", hold = "catch_press", variety = "catch_reel" },
   { id = "scatter", macros = { "density", "size" }, defaults = { 0.45, 0.45 },
@@ -54,11 +60,17 @@ local function wipe() for i = 1, WAVE do wave[i] = 0 end; last_seg = nil end
 wipe()
 local sent = {}
 local reel_now = 15 -- the engine's reel (s)
-local shown = { part = 0, e2 = 0, e3 = 0, word = 0 } -- seconds left for each overlay
+local shown = { part = 0, e2 = 0, e3 = 0, word = 0, station = 0 } -- seconds left for each overlay
+local tuning = false -- moving between stations: the reel is pressed (if set) and the static plays
+local station, status = nil, "starting"
+-- pace: how often the wind moves on its own, in beats of the norns clock (nil: only by hand)
+local PACES = { false, 64, 32, 16, 8, 4 }
 local word = ""
 local redraw_metro
 
 local function m(id) return params:get(id) end
+local function pressed() return m("catch_press") == 1 or (tuning and m("tune_press") == 1) end
+local function pace_beats() return PACES[math.min(#PACES, 1 + math.floor(m("wind_pace") * #PACES))] end
 local function db(v) return v <= -59.9 and 0 or 10 ^ (v / 20) end
 
 -- the values sound.engine() maps, from the params and the gestures in flight
@@ -71,7 +83,7 @@ local function values()
     air_space = m("air_space"), air_mix = m("air_mix"),
     reel = S.REELS[m("catch_reel")], envelope = m("scatter_envelope"), media = m("tone_media"),
     scale = m("tint_scale"),
-    frozen = m("catch_press") == 1, flipped = m("tint_flip") == 1, hazed = m("air_haze") == 1,
+    frozen = pressed(), flipped = m("tint_flip") == 1, hazed = m("air_haze") == 1,
     burst = burst,
   }
 end
@@ -81,7 +93,7 @@ local function send()
   local e = S.engine(values())
   e.level = db(m("level"))
   e.adc = db(m("input"))
-  e.static = math.max(m("static"), static_env)
+  e.static = math.max(m("static"), static_env, tuning and m("tune_static") or 0)
   for k, v in pairs(e) do
     if sent[k] ~= v then
       engine.set(k, v)
@@ -96,7 +108,7 @@ local function say(w) word, shown.word = w, 1.2 end
 -- (a few at most: a head that jumps, as when the engine's head poll corrects the mirror, just
 -- starts again where it is)
 local function catch_level(a)
-  if m("catch_press") == 1 then return end
+  if pressed() then return end
   local seg = math.floor(head / S.REELS[m("catch_reel")] * WAVE) % WAVE + 1
   if seg ~= last_seg then
     local gap = last_seg and (seg - last_seg) % WAVE or 0
@@ -116,7 +128,7 @@ end
 
 local function add_params()
   local macro_spec = function(d) return controlspec.new(0, 1, "lin", 0, d, "", 0.01) end
-  local counts = { catch = 4, scatter = 3, tint = 4, tone = 3, air = 3 }
+  local counts = { wind = 4, catch = 4, scatter = 3, tint = 4, tone = 3, air = 3 }
   for _, P in ipairs(PARTS) do
     params:add_group("pollen_" .. P.id, P.id, counts[P.id])
     for i, name in ipairs(P.macros) do
@@ -124,7 +136,13 @@ local function add_params()
       params:add_control(id, name, macro_spec(P.defaults[i]))
       params:set_action(id, send)
     end
-    if P.id == "catch" then
+    if P.id == "wind" then
+      local names = {}
+      for i, k in ipairs(W.KINDS) do names[i] = k.name end
+      params:add_option("wind_kind", "wind", names, 1)
+      params:add_trigger("wind_drift", "drift now") -- also MIDI-mappable, and norns-web's Drift button
+      params:set_action("wind_drift", function() if radio.drift() then say("drifting") end end)
+    elseif P.id == "catch" then
       local names = {}
       for i, s in ipairs(S.REELS) do names[i] = s .. " s" end
       params:add_option("catch_reel", "reel", names, 3)
@@ -154,6 +172,13 @@ local function add_params()
       params:set_action(P.hold, send)
     end
   end
+  params:add_group("pollen_radio", "radio", 5)
+  params:add_binary("tune_press", "press while tuning", "toggle", 1)
+  params:add_control("tune_static", "static while tuning", controlspec.new(0, 1, "lin", 0, 0.3, "", 0.01))
+  params:add_control("crossfade", "crossfade", controlspec.new(0.2, 10, "lin", 0, 2, "s", 0.01))
+  params:add_control("timeout", "give a station", controlspec.new(4, 30, "lin", 0, 10, "s", 0.01))
+  params:add_trigger("refresh", "refresh the stations")
+  params:set_action("refresh", function() radio.refresh() end)
   params:add_group("pollen_levels", "levels", 4)
   params:add_control("level", "level", controlspec.new(-60, 6, "lin", 0, 0, "dB", 0.01))
   params:set_action("level", send)
@@ -202,6 +227,8 @@ local function gesture(P)
   elseif P.gesture == "static" then
     static_env = 1
     say("static")
+  elseif P.gesture == "drift" then
+    if radio.drift() then say("drifting") end
   end
   send()
 end
@@ -209,8 +236,15 @@ end
 function key(n, z)
   held[n] = z == 1
   if n == 2 then
-    if z == 1 then k2_used = false end
-    -- a K2 tap: the wind's (the next station), when the radio comes
+    if z == 1 then
+      k2_used = false
+      if held[1] then -- hold K1 + K2: back to the station before
+        k2_used = true
+        if radio.back() then say("back") end
+      end
+    elseif not k2_used then -- a K2 tap: drift on with the wind
+      if radio.drift() then say("drifting") end
+    end
   elseif n == 3 and z == 1 and not held[1] then
     gesture(PARTS[part])
   end
@@ -222,7 +256,7 @@ end
 local function look()
   local e = S.engine(values())
   return {
-    reel = S.REELS[m("catch_reel")], head = head, filled = filled, frozen = m("catch_press") == 1,
+    reel = S.REELS[m("catch_reel")], head = head, filled = filled, frozen = pressed(),
     density = e.density, size = e.size, rate = 2 ^ (e.pitch / 12), reverse = e.reverse,
     age = e.position, pos_spread = e.pos_spread, fb = e.fb,
     space = m("air_space"), hazed = m("air_haze") == 1,
@@ -238,10 +272,23 @@ local function text(x, y, s, l, align)
   if align == "right" then screen.text_right(s) elseif align == "center" then screen.text_center(s) else screen.text(s) end
 end
 
--- hold K1: every part and where its two macros are, as bars (no numbers)
+-- text that fits a width, cut short with an ellipsis
+local function fit(s, w)
+  s = tostring(s or "")
+  if screen.text_extents(s) <= w then return s end
+  while #s > 1 and screen.text_extents(s .. "...") > w do s = s:sub(1, -2) end
+  return s .. "..."
+end
+
+local function place_of(st)
+  if st.place ~= "" and st.place ~= st.country then return st.place .. ", " .. st.country end
+  return st.country
+end
+
+-- hold K1: every part and where its two macros are, as bars (no numbers), and the station
 local function draw_peek()
   for i, P in ipairs(PARTS) do
-    local y = 4 + (i - 1) * 12
+    local y = (i - 1) * 9
     local l = i == part and 15 or 5
     text(2, y + 6, P.id, l)
     for k = 1, 2 do
@@ -255,6 +302,8 @@ local function draw_peek()
       screen.fill()
     end
   end
+  if station then text(64, 62, fit(station.name .. " - " .. place_of(station), 126), 8, "center")
+  else text(64, 62, status, 4, "center") end
 end
 
 function redraw()
@@ -267,7 +316,18 @@ function redraw()
     if shown.part > 0 then text(2, 8, P.id, 15 * math.min(1, shown.part)) end
     if shown.e2 > 0 then text(2, 62, P.macros[1], 12 * math.min(1, shown.e2)) end
     if shown.e3 > 0 then text(126, 62, P.macros[2], 12 * math.min(1, shown.e3), "right") end
-    if shown.word > 0 then text(126, 8, word, 12 * math.min(1, shown.word), "right") end
+    if shown.word > 0 then text(126, 8, word, 12 * math.min(1, shown.word), "right")
+    elseif tuning then text(126, 8, "tuning", 5 + 5 * math.abs(math.sin(util.time() * 4)), "right") end
+    -- the station: its name and place for a while after arriving; the radio's state when it
+    -- isn't playing
+    local busy = shown.part > 0 or shown.e2 > 0 or shown.e3 > 0
+    if station and shown.station > 0 and not busy then
+      local l = 13 * math.min(1, shown.station)
+      text(64, 8, fit(station.name, 124), l, "center")
+      text(64, 62, fit(place_of(station), 124), l * 0.7, "center")
+    elseif status ~= "playing" and status ~= "tuning" and not busy then
+      text(64, 62, status, 4, "center")
+    end
   end
   screen.update()
 end
@@ -275,7 +335,7 @@ end
 local function tick()
   local dt = 1 / FPS
   local reel = S.REELS[m("catch_reel")]
-  if m("catch_press") == 0 then
+  if not pressed() then
     head = (head + dt) % reel
     filled = math.min(reel, filled + dt)
   end
@@ -306,8 +366,29 @@ function init()
   end
   redraw_metro = metro.init(tick, 1 / FPS)
   redraw_metro:start()
+
+  -- the radio, and the wind's pace on the norns clock
+  radio.init({
+    tuning = function(on) tuning = on; send() end,
+    arrived = function(st) station = st; shown.station = 6 end,
+    status = function(s) status = s end,
+    settings = function()
+      return { kind = W.KINDS[m("wind_kind")].id, reach = m("wind_reach"), xfade = m("crossfade"),
+        timeout = m("timeout"), settle = 1.5, volume = 1 }
+    end,
+  })
+  clock.run(function()
+    local beats = 0
+    while true do
+      clock.sync(1)
+      beats = beats + 1
+      local every = pace_beats()
+      if every and beats >= every and radio.drift() then beats = 0 end
+    end
+  end)
 end
 
 function cleanup()
   if redraw_metro then redraw_metro:stop() end
+  radio.cleanup()
 end
