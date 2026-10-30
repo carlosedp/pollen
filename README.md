@@ -35,21 +35,66 @@ from Clouds and Rings; without them, FreeVerb2.
 | Control      | Does                                                                                     |
 | ------------ | ---------------------------------------------------------------------------------------- |
 | E1           | choose a part: wind, catch, scatter, tint, tone, air                                     |
-| E2, E3       | that part's two macros (their names show for a moment while you turn them)               |
+| E2, E3       | that part's two macros (their names and bars show for a moment while you turn them)               |
 | K2           | drift: the wind moves on to the next station                                             |
 | K3           | its gesture: drift (wind), press the reel (catch), a burst (scatter), backwards (tint), static (tone), hold the haze (air) |
 | hold K2 + E2 | its variety: the wind (wind), reel length (catch), grain envelope (scatter), scale (tint), media (tone) |
 | hold K1      | peek: every part and where its macros are, and the station                               |
 | hold K1 + K2 | back to the station before                                                               |
 
-| Part    | E2 · E3          | What it does                                                                  |
-| ------- | ---------------- | ----------------------------------------------------------------------------- |
-| wind    | pace · reach     | how often it moves on by itself (from still, by hand only, to every 4 beats of the norns clock); how far a move goes |
-| catch   | memory · cross   | how far back into the reel the grains reach; how much of them is written back in (cross-pollination) |
-| scatter | density · size   | how many grains, how long each one is                                         |
-| tint    | pitch · spread   | their pitch in the scale; how far it scatters, and past the middle, some backwards |
-| tone    | color · drive    | one-knob filter (left closes a low-pass, right opens a high-pass); saturation |
-| air     | space · mix      | the reverb; from the live input alone to the grains alone                     |
+Each part has two macros (E2 on the left, E3 on the right), a gesture (K3) and a variety (hold
+K2, turn E2). The bars beside the names show where each macro is.
+
+**wind**: when and where the radio moves to the next station.
+- *pace* (E2): how often it moves on by itself. All the way left it only moves when you drift
+  (K2); then every 64, 32, 16, 8 or 4 beats of the norns clock.
+- *reach* (E3): how far a move goes. Left stays close, a city or two away; right crosses
+  continents.
+- K3 *drift*: move on now, the same as a K2 tap.
+- variety, *the wind*: a breeze goes to one of the nearest stations, a trade wind keeps one
+  direction, an eddy wanders, a gust goes anywhere, the far side goes to the other side of the
+  world and back.
+
+**catch**: the reel, the loop of tape the radio is recorded onto and the grains are read from.
+- *memory* (E2): where on the reel the grains are read. Left is just behind the recording, so you
+  hear the station almost live; right reaches back into what was caught seconds ago, and the
+  grains come from a wider stretch of it.
+- *cross* (E3): how much of the grains is recorded back onto the reel with the radio. Left: the
+  reel holds only the radio. Right: the grains pile up on themselves into smears and drones.
+- K3 *press*: stop recording, so the reel holds what it has and the grains keep playing it (K3
+  again releases it).
+- variety, *reel length*: 4, 8, 15, 30 or 60 seconds of tape.
+
+**scatter**: the grains themselves.
+- *density* (E2): how many: from one every two seconds to 40 a second, looser in time and wider
+  in stereo as there are more.
+- *size* (E3): how long each one is: from 20 ms, a click or a buzz, to 2 s, a long overlapping
+  wash.
+- K3 *burst*: four times as many for a moment.
+- variety, *envelope*: the shape of each grain. Bell is smooth, pluck starts sharp and dies away,
+  block is square and clicky.
+
+**tint**: the pitch of the grains.
+- *pitch* (E2): from two octaves down (left) to two up (right); the middle plays them as
+  recorded. It snaps to the notes of the scale.
+- *spread* (E3): how much each grain's pitch wanders from that, up to an octave. Past the middle,
+  some grains also play backwards.
+- K3 *flip*: most grains play backwards (K3 again turns them around).
+- variety, *scale*: octaves, fifths, major, minor, chromatic, or free (no snapping).
+
+**tone**: the color of the sound.
+- *color* (E2): one filter knob, like a DJ mixer's. The middle is open. Turn left and a low-pass
+  closes, darker and muffled. Turn right and a high-pass opens, thinner. It rings more toward
+  either end.
+- *drive* (E3): saturation, from clean to crunchy.
+- K3 *static*: a burst of radio static.
+- variety, *media*: what the sound passes through, after Beads: digital (clean), vintage (a
+  lo-fi sampler), clean tape, dirty tape.
+
+**air**: the space around it, and the final mix.
+- *space* (E2): how much of the grains goes to the reverb, and how big the room is.
+- *mix* (E3): left is the radio alone, as it plays; right is the grains alone; between them, both.
+- K3 *haze*: hold the reverb's tail so it hangs on (K3 again lets it go).
 
 **The wind** picks the next station: a *breeze* drifts to one of the nearest, a *trade wind*
 carries on along one bearing, an *eddy* wanders, a *gust* goes anywhere, the *far side* jumps to

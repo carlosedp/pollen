@@ -285,6 +285,26 @@ local function place_of(st)
   return st.country
 end
 
+-- a macro's name and a bar for where it is, E2's on the left and E3's on the right (where the
+-- encoders are), on a dark strip so the bloom doesn't run through them; f fades them out
+local BAR = 20
+local function draw_macro(P, k, f)
+  local name = P.macros[k]
+  local w = screen.text_extents(name) or #name * 5
+  local x = k == 1 and 2 or 126 - BAR - 4 - w
+  screen.level(0)
+  screen.rect(x - 2, 55, w + BAR + 6, 9)
+  screen.fill()
+  text(x, 62, name, 12 * f)
+  local bx = x + w + 4
+  screen.level(math.max(1, math.floor(2 * f + 0.5)))
+  screen.rect(bx, 58, BAR, 2)
+  screen.fill()
+  screen.level(math.max(1, math.floor(10 * f + 0.5)))
+  screen.rect(bx, 58, math.max(1, math.floor(BAR * m(P.id .. "_" .. name) + 0.5)), 2)
+  screen.fill()
+end
+
 -- hold K1: every part and where its two macros are, as bars (no numbers), and the station
 local function draw_peek()
   for i, P in ipairs(PARTS) do
@@ -314,8 +334,10 @@ function redraw()
     bloom.draw(look())
     local P = PARTS[part]
     if shown.part > 0 then text(2, 8, P.id, 15 * math.min(1, shown.part)) end
-    if shown.e2 > 0 then text(2, 62, P.macros[1], 12 * math.min(1, shown.e2)) end
-    if shown.e3 > 0 then text(126, 62, P.macros[2], 12 * math.min(1, shown.e3), "right") end
+    for k = 1, 2 do
+      local f = math.min(1, math.max(shown["e" .. (k + 1)], shown.part))
+      if f > 0 then draw_macro(P, k, f) end
+    end
     if shown.word > 0 then text(126, 8, word, 12 * math.min(1, shown.word), "right")
     elseif tuning then text(126, 8, "tuning", 5 + 5 * math.abs(math.sin(util.time() * 4)), "right") end
     -- the station: its name and place for a while after arriving; the radio's state when it
