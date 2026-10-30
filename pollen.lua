@@ -6,7 +6,7 @@
 -- E1 choose a part
 -- E2 E3 shape it
 -- K3 its gesture
--- K2 drift to the next station
+--   (on the wind: drift)
 -- hold K2 + E2: its variety
 -- hold K1: peek
 -- hold K1 + K2: back a station

@@ -1,6 +1,6 @@
 # <img src="doc/img/icon.svg" alt="" width="40" height="40" align="top"> pollen
 
-🌼 The world's radio, carried on the wind, scattered as grains. A live granular instrument for
+🌾 The world's radio, carried on the wind, scattered as grains. A live granular instrument for
 [monome norns](https://monome.org/docs/norns/).
 
 **[Try it in your browser](https://carlosedp.github.io/pollen/)**: the real script, on
