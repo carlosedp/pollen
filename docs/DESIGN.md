@@ -164,26 +164,35 @@ one rotation (9 multiplies per point) and a back-face test, which is cheap enoug
   and size, not polled per grain). It drifts downwind (along the walk bearing) and lives as long as
   the grain does.
 
-**Bloom (what).** A close-up of the flower. **The reel is drawn as a ring**: a circular buffer
-drawn as a circle, which is also a flower head and a radio dial. The write head sweeps around it
-like a radar. Splices are petals, one per station caught, and pressed ones are drawn solid. Grains
-are pollen leaving the ring:
+**Tape (what).** The ring bloom came first: the reel bent into a circle, which was meant to read
+as a flower head and a radio dial. At 128x64 it read as a fuzzy donut instead. A waveform bent
+around a circle has no baseline, so it didn't look like tape or anything else. Now the screen is
+one scene in two halves, both always shown: the globe on the left (where), the reel laid flat on
+the right (what), like a sampler's screen. What the station sends flows as dots from it on the
+globe to the write head.
 
-| what moves       | how it shows                                           |
-| ---------------- | ------------------------------------------------------ |
-| position (slide) | the angle behind the write head the pollen leaves from |
-| size             | how far a grain flies before it fades                  |
-| density          | how many fly                                           |
-| pitch            | how fast they fly (lower is slower)                    |
-| reverse          | grains fall back into the ring instead of out          |
-| press (freeze)   | the sweep stops and the pollen hangs in the air        |
-| cross-pollinate  | grains arc back and land on the ring again             |
-| air (reverb)     | a haze around the bloom                                |
+The globe draws no coastlines: the stations are its dots (where many share a pixel it's
+brighter), so the land shows where people broadcast from, with a faint graticule and the rim to
+make it a sphere. Radio-browser's list is heavy on Europe and the Americas, and the globe shows
+that.
+
+| what moves       | how it shows                                                          |
+| ---------------- | --------------------------------------------------------------------- |
+| the reel         | a waveform, stretched between its quietest and loudest (broadcasts are compressed) |
+| the write head   | a bright bar sweeping left to right; the newest sound is brightest behind it |
+| memory           | the bracket under the tape: where the grains are read, and how wide   |
+| density          | how many grains leave the tape                                        |
+| size             | how long each grain's dash is, and how long it lives                  |
+| pitch            | how fast they move (lower is slower)                                  |
+| reverse          | backwards grains go down from the tape, forwards ones up              |
+| press (freeze)   | the head stops, the whole tape evenly lit, nothing flows in           |
+| cross-pollinate  | grains turn back and land on the tape again                           |
+| air (reverb)     | a haze over the tape                                                  |
 
 ### Controls (terrarium's grammar)
 
-E1 picks a part. The wind's part shows the globe; the others show the bloom, with a quick zoom
-between them. Each part has two macros, and their names show for a moment while you turn them.
+E1 picks a part. Each part has two macros, and their names show for a moment while you turn them,
+each with a bar for where it is.
 
 | part    | E2 / E3                                  | K3 gesture      | hold K2 + E2 (variant) |
 | ------- | ---------------------------------------- | --------------- | ---------------------- |
@@ -379,7 +388,7 @@ returns canned radio-browser JSON, and mpv IPC is recorded and asserted.
 
 - §4.5: the reel is up to 60 s, with Lua-tracked splices per station, plus an _organize_ control.
   MiVerb (optional) for the air.
-- §4.8: one scene in two views (globe, bloom) and five parts with two macros each, instead of
+- §4.8: one scene in two halves (globe, tape) and five parts with two macros each, instead of
   three param pages.
 - §2 / §6: dependencies through norns-deps.
 - §8: default backend radio-browser; norns-web is the dev environment (above).

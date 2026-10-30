@@ -24,7 +24,7 @@
 engine.name = "Pollen"
 
 local S = include("lib/sound")
-local bloom = include("lib/bloom")
+local view = include("lib/view")
 local radio = include("lib/radio")
 local W = include("lib/walker")
 
@@ -54,7 +54,7 @@ local burst, static_env = 0, 0
 local head, filled = 0, 0 -- the write head and how much of the reel is caught (s), mirrored
 -- the tape: the loudest level written to each of WAVE segments of the reel, as the head last
 -- passed it (from the engine's amp_reel poll); a pressed reel keeps what's there
-local WAVE = 96
+local WAVE = 64
 local wave, last_seg = {}, nil
 local function wipe() for i = 1, WAVE do wave[i] = 0 end; last_seg = nil end
 wipe()
@@ -63,6 +63,7 @@ local reel_now = 15 -- the engine's reel (s)
 local shown = { part = 0, e2 = 0, e3 = 0, word = 0, station = 0 } -- seconds left for each overlay
 local tuning = false -- moving between stations: the reel is pressed (if set) and the static plays
 local station, status = nil, "starting"
+local seeking, trail, amp = nil, {}, 0 -- the station being tried, the last ones, the level written
 -- pace: how often the wind moves on its own, in beats of the norns clock (nil: only by hand)
 local PACES = { false, 64, 32, 16, 8, 4 }
 local word = ""
@@ -108,6 +109,7 @@ local function say(w) word, shown.word = w, 1.2 end
 -- (a few at most: a head that jumps, as when the engine's head poll corrects the mirror, just
 -- starts again where it is)
 local function catch_level(a)
+  amp = a
   if pressed() then return end
   local seg = math.floor(head / S.REELS[m("catch_reel")] * WAVE) % WAVE + 1
   if seg ~= last_seg then
@@ -152,7 +154,7 @@ local function add_params()
         engine.reel(reel_now)
         head, filled = 0, 0
         wipe()
-        bloom.reset()
+        view.reset()
         send()
       end)
     elseif P.id == "scatter" then
@@ -191,7 +193,7 @@ local function add_params()
     engine.clear()
     filled = 0
     wipe()
-    bloom.reset()
+    view.reset()
   end)
 end
 
@@ -252,7 +254,7 @@ end
 
 -- ---------- the picture ----------
 
--- what the bloom draws, from what the sound is doing
+-- what the view draws, from what the sound and the radio are doing
 local function look()
   local e = S.engine(values())
   return {
@@ -262,7 +264,8 @@ local function look()
     space = m("air_space"), hazed = m("air_haze") == 1,
     color = m("tone_color"), drive = e.drive, media = m("tone_media"),
     static = math.max(m("static"), static_env),
-    wave = wave,
+    wave = wave, amp = amp,
+    stations = radio.stations, here = station, seeking = seeking, trail = trail,
   }
 end
 
@@ -285,8 +288,16 @@ local function place_of(st)
   return st.country
 end
 
+-- the place, in w pixels: all of it if it fits, else the city, else the country
+local function short_place(st, w)
+  for _, s in ipairs({ place_of(st), st.place, st.country }) do
+    if s ~= "" and screen.text_extents(s) <= w then return s end
+  end
+  return fit(st.country ~= "" and st.country or st.place, w)
+end
+
 -- a macro's name and a bar for where it is, E2's on the left and E3's on the right (where the
--- encoders are), on a dark strip so the bloom doesn't run through them; f fades them out
+-- encoders are), on a dark strip so the picture doesn't run through them; f fades them out
 local BAR = 20
 local function draw_macro(P, k, f)
   local name = P.macros[k]
@@ -331,24 +342,28 @@ function redraw()
   if held[1] then
     draw_peek()
   else
-    bloom.draw(look())
+    view.draw(look())
     local P = PARTS[part]
-    if shown.part > 0 then text(2, 8, P.id, 15 * math.min(1, shown.part)) end
+    -- the top right, over the tape: a gesture's word, or tuning, or the station's name (bright
+    -- as it arrives); under the tape, its place, or the radio's state when it isn't playing
+    if shown.word > 0 then text(126, 8, word, 12 * math.min(1, shown.word), "right")
+    elseif tuning then text(126, 8, "tuning", 5 + 5 * math.abs(math.sin(util.time() * 4)), "right")
+    elseif station then text(126, 8, fit(station.name, 64), 4 + 9 * math.min(1, shown.station), "right") end
+    if station and status == "playing" or status == "tuning" then
+      if station then text(126, 52, short_place(station, 64), 3 + 7 * math.min(1, shown.station), "right") end
+    else
+      text(126, 52, status, 4, "right")
+    end
+    if shown.part > 0 then
+      local w = screen.text_extents(P.id) or #P.id * 5
+      screen.level(0)
+      screen.rect(0, 0, w + 4, 10)
+      screen.fill()
+      text(2, 8, P.id, 15 * math.min(1, shown.part))
+    end
     for k = 1, 2 do
       local f = math.min(1, math.max(shown["e" .. (k + 1)], shown.part))
       if f > 0 then draw_macro(P, k, f) end
-    end
-    if shown.word > 0 then text(126, 8, word, 12 * math.min(1, shown.word), "right")
-    elseif tuning then text(126, 8, "tuning", 5 + 5 * math.abs(math.sin(util.time() * 4)), "right") end
-    -- the station: its name and place for a while after arriving; the radio's state when it
-    -- isn't playing
-    local busy = shown.part > 0 or shown.e2 > 0 or shown.e3 > 0
-    if station and shown.station > 0 and not busy then
-      local l = 13 * math.min(1, shown.station)
-      text(64, 8, fit(station.name, 124), l, "center")
-      text(64, 62, fit(place_of(station), 124), l * 0.7, "center")
-    elseif status ~= "playing" and status ~= "tuning" and not busy then
-      text(64, 62, status, 4, "center")
     end
   end
   screen.update()
@@ -367,7 +382,7 @@ local function tick()
     static_env = math.max(0, static_env - dt / 1.2)
     send()
   end
-  bloom.update(dt, look())
+  view.update(dt, look())
   redraw()
 end
 
@@ -391,8 +406,17 @@ function init()
 
   -- the radio, and the wind's pace on the norns clock
   radio.init({
-    tuning = function(on) tuning = on; send() end,
-    arrived = function(st) station = st; shown.station = 6 end,
+    tuning = function(on)
+      tuning = on
+      if not on then seeking = nil end
+      send()
+    end,
+    seeking = function(st) seeking = st end,
+    arrived = function(st)
+      station, seeking, shown.station = st, nil, 6
+      trail[#trail + 1] = st
+      if #trail > 6 then table.remove(trail, 1) end
+    end,
     status = function(s) status = s end,
     settings = function()
       return { kind = W.KINDS[m("wind_kind")].id, reach = m("wind_reach"), xfade = m("crossfade"),

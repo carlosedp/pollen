@@ -124,7 +124,7 @@ do
   end
 end
 
-run(3); ok("default bloom")
+run(3); ok("default view")
 
 -- the radio: stations fetched once (HLS and placeless ones left out), the first one silent,
 -- so it's marked dead and the wind moves on; then a station plays

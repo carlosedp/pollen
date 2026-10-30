@@ -4,7 +4,8 @@
 -- that doesn't play in time is marked dead (for an hour) and the wind tries another.
 -- Stateful: include it only from pollen.lua.
 --
---   R.init(hooks)   hooks: tuning(on) (press/static while moving), arrived(station),
+--   R.init(hooks)   hooks: tuning(on) (press/static while moving), seeking(station) (the one
+--                   being tried), arrived(station),
 --                   status(text), settings() -> { kind, reach, xfade, timeout, settle, volume }
 --   R.drift()       move on with the wind (ignored while already moving)
 --   R.back()        back to the station before (history)
@@ -71,6 +72,7 @@ local function move()
       local st = forced or W.next(s.kind, R.stations, R.current, mem, s.reach, is_dead)
       forced = nil
       if not st then break end
+      if hooks.seeking then hooks.seeking(st) end
       local idle = R.current and (live == "a" and "b" or "a") or live
       -- loadfile is waited for without a limit: mpv answers at once (or socat fails at once);
       -- in a browser the answer waits for its sound to be switched on

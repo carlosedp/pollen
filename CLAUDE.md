@@ -7,9 +7,9 @@ plumbing (backends, mpv, JACK, walker) is docs/SPEC.md. README.md is the player'
 **Status:** v0.2, in development. The radio plays: radio-browser stations (`lib/stations.lua`,
 cached), two mpv players over JACK (`lib/player.lua`), the wind (`lib/walker.lua`) and the tuning
 sequence (`lib/radio.lua`); six parts (wind, catch, scatter, tint, tone, air) drive the reel engine.
-In the browser the same Lua tunes real stations (the stand-in plays mpv's part). Not yet: the
-globe view (visuals are to be revisited: the bloom reads as too abstract), Radio Garden, the seed
-vault, norns-deps for installing mpv/socat, crow/grid.
+The screen (`lib/view.lua`) is the globe on the left and the reel as tape on the right. In the
+browser the same Lua tunes real stations (the stand-in plays mpv's part). Not yet: Radio Garden,
+the seed vault, norns-deps for installing mpv/socat, crow/grid.
 Never run on a norns: the Lua passes the smoke test; the engine passes `make test-sc` on scsynth
 3.13 (with the FreeVerb2 fallback: MiVerb is untested in SuperCollider).
 
@@ -25,7 +25,7 @@ make web       # the real script in a browser at http://localhost:8800/
 
 - **norns runs Lua 5.3.** No `<const>`/`<close>` or other 5.4+ features (the dev machine has Lua
   5.5, norns-web runs 5.4; neither catches 5.4-only code).
-- **`include()` is `dofile`:** every call returns a fresh copy. Stateful modules (`lib/bloom.lua`)
+- **`include()` is `dofile`:** every call returns a fresh copy. Stateful modules (`lib/view.lua`)
   are included only from `pollen.lua`. `lib/sound.lua` is pure.
 - **Lua owns every macro-to-parameter mapping** (`lib/sound.lua`); the engine exposes raw
   parameters only, all through one command, `set(key, value)`, sent to a group holding every
@@ -37,7 +37,7 @@ make web       # the real script in a browser at http://localhost:8800/
 - **Never write mi-UGens class names in the .sc file.** Look them up with `\MiVerb.asClass`; a
   missing class fails sclang for every norns script. Without mi-UGens the engine must still play.
 - **K1 is hold-only.** A quick K1 tap opens the norns system menu.
-- **No numbers on screen.** The bloom is the readout; names show briefly on touch; hold K1 peeks.
+- **No numbers on screen.** The picture is the readout; names show briefly on touch; hold K1 peeks.
 - Params group sizes are declared up front (`counts` in `add_params`); the smoke test checks them.
   Add new options at the end of their lists (`lib/sound.lua`), so saved PSETs keep their choices.
 - **The radio runs programs through `norns.system_cmd`** (curl, mpv, socat, pkill): a new command

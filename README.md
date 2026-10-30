@@ -102,11 +102,14 @@ the other side of the world and back. Moving to a station presses the reel and p
 static, so the last station keeps sounding as grains until the next one is caught; a station that
 doesn't play in time is skipped. Its name and place show as you arrive (and on a K1 peek).
 
-The screen is the bloom. The reel is a ring of tape: the waveform of what it caught, bent around,
-brightest just behind the write head that sweeps it (older sound dims; what isn't caught yet is a
-faint dotted line). Grains leave it as pollen, from where they're read (the short arc inside the
-ring), as bright as the tape is loud there and flying as fast as they're pitched; silence throws
-none. Pressed, the sweep stops and the whole loop holds evenly lit. The haze around it is the reverb. Every
+The screen has two halves. On the left, the globe: every station is a dot, the one playing is at
+the middle sending out radio waves as loud as it is, the wind's last moves are its trail, and
+while tuning the station being tried blinks at the end of a dotted path. On the right, the reel
+laid flat like tape: the waveform of what it caught, with the write head sweeping it (the newest
+sound brightest behind it; what isn't caught yet is a dotted line). The bracket under the tape is
+where the grains are read from (memory). The grains leave the tape from there, up when they play
+forwards and down when backwards, faster the higher they're pitched; silence throws none. Pressed,
+the head stops and the whole tape holds evenly lit. The haze over it is the reverb. Every
 macro, variety and gesture is also in PARAMS, so it saves with PSETs and can be MIDI-mapped.
 
 ## How it's built
@@ -114,7 +117,7 @@ macro, variety and gesture is also in PARAMS, so it saves with PSETs and can be 
 ```
 pollen.lua               the script: parts, params, controls, the picture
 lib/sound.lua            every macro -> engine parameter mapping (where the sound is tuned)
-lib/bloom.lua            the bloom: the reel as a ring, the pollen
+lib/view.lua             the screen: the globe and the stations, the tape and the grains
 lib/radio.lua            the radio: tuning a station (press, static, load, crossfade, release)
 lib/stations.lua         the stations, from radio-browser.info, cached on the norns
 lib/player.lua           two mpv players, over JACK into the engine, driven through socat
