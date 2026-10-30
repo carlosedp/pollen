@@ -36,7 +36,6 @@ from Clouds and Rings; without them, FreeVerb2.
 | ------------ | ---------------------------------------------------------------------------------------- |
 | E1           | choose a part: wind, catch, scatter, tint, tone, air                                     |
 | E2, E3       | that part's two macros (their names and bars show for a moment while you turn them)               |
-| K2           | drift: the wind moves on to the next station                                             |
 | K3           | its gesture: drift (wind), press the reel (catch), a burst (scatter), backwards (tint), static (tone), hold the haze (air) |
 | hold K2 + E2 | its variety: the wind (wind), reel length (catch), grain envelope (scatter), scale (tint), media (tone) |
 | hold K1      | peek: every part and where its macros are, and the station                               |
@@ -46,20 +45,20 @@ Each part has two macros (E2 on the left, E3 on the right), a gesture (K3) and a
 K2, turn E2). The bars beside the names show where each macro is.
 
 **wind**: when and where the radio moves to the next station.
-- *pace* (E2): how often it moves on by itself. All the way left it only moves when you drift
-  (K2); then every 64, 32, 16, 8 or 4 beats of the norns clock.
+- *pace* (E2): how often it moves on by itself. All the way left (where it starts) it only moves
+  when you drift (K3); then every 64, 32, 16, 8 or 4 beats of the norns clock.
 - *reach* (E3): how far a move goes. Left stays close, a city or two away; right crosses
   continents.
-- K3 *drift*: move on now, the same as a K2 tap.
+- K3 *drift*: move on to the next station now.
 - variety, *the wind*: a breeze goes to one of the nearest stations, a trade wind keeps one
   direction, an eddy wanders, a gust goes anywhere, the far side goes to the other side of the
   world and back.
 
 **catch**: the reel, the loop of tape the radio is recorded onto and the grains are read from.
-- *memory* (E2): where on the reel the grains are read. Left is just behind the recording, so you
+- *position* (E2): where on the reel the grains are read. Left is just behind the recording, so you
   hear the station almost live; right reaches back into what was caught seconds ago, and the
   grains come from a wider stretch of it.
-- *cross* (E3): how much of the grains is recorded back onto the reel with the radio. Left: the
+- *feedback* (E3): how much of the grains is recorded back onto the reel with the radio. Left: the
   reel holds only the radio. Right: the grains pile up on themselves into smears and drones.
 - K3 *press*: stop recording, so the reel holds what it has and the grains keep playing it (K3
   again releases it).
@@ -98,8 +97,8 @@ K2, turn E2). The bars beside the names show where each macro is.
 
 **The wind** picks the next station: a *breeze* drifts to one of the nearest, a *trade wind*
 carries on along one bearing, an *eddy* wanders, a *gust* goes anywhere, the *far side* jumps to
-the other side of the world and back. Moving to a station presses the reel and plays a little
-static, so the last station keeps sounding as grains until the next one is caught; a station that
+the other side of the world and back. Moving to a station presses the reel (and can play a little static: *static while
+tuning* in PARAMS), so the last station keeps sounding as grains until the next one is caught; a station that
 doesn't play in time is skipped. Its name and place show as you arrive (and on a K1 peek).
 
 The screen has two halves. On the left, the globe: every station is a dot, the one playing is at
@@ -107,7 +106,7 @@ the middle sending out radio waves as loud as it is, the wind's last moves are i
 while tuning the station being tried blinks at the end of a dotted path. On the right, the reel
 laid flat like tape: the waveform of what it caught, with the write head sweeping it (the newest
 sound brightest behind it; what isn't caught yet is a dotted line). The bracket under the tape is
-where the grains are read from (memory). The grains leave the tape from there, up when they play
+where the grains are read from (position). The grains leave the tape from there, up when they play
 forwards and down when backwards, faster the higher they're pitched; silence throws none. Pressed,
 the head stops and the whole tape holds evenly lit. The haze over it is the reverb. Every
 macro, variety and gesture is also in PARAMS, so it saves with PSETs and can be MIDI-mapped.

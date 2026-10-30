@@ -272,7 +272,7 @@ local function draw_tape(st)
   -- the head
   local hx = tape_x(headf, n) + ox
   rect(hx, TY - HMAX - 3, 1, 2 * HMAX + 7, st.frozen and 9 or 15)
-  -- the window the grains are read from: a bracket under the tape, behind the head by memory
+  -- the window the grains are read from: a bracket under the tape, behind the head by position
   local y = TY + HMAX + 4
   local to = headf - st.age / st.reel
   local w = max(2, st.pos_spread * n)
@@ -335,7 +335,7 @@ function V.update(dt, st)
         life = life, max = life, len = len, bright = 0.3 + 0.7 * min(1, loud) }
     end
   end
-  -- grains drift off the tape; cross-pollination turns them back to it
+  -- grains drift off the tape; feedback turns them back to it
   for i = #grains, 1, -1 do
     local g = grains[i]
     g.life = g.life - dt

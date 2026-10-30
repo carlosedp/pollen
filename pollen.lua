@@ -33,9 +33,9 @@ local FPS = 15
 -- the parts of pollen, each with two macros (E2, E3), a gesture (K3) and a variety
 -- (hold K2 + E2). A gesture that holds a state keeps it in a param, so presets save it.
 local PARTS = {
-  { id = "wind", macros = { "pace", "reach" }, defaults = { 0.2, 0.3 },
+  { id = "wind", macros = { "pace", "reach" }, defaults = { 0, 0.3 },
     gesture = "drift", variety = "wind_kind" },
-  { id = "catch", macros = { "memory", "cross" }, defaults = { 0.3, 0.2 },
+  { id = "catch", macros = { "position", "feedback" }, defaults = { 0.3, 0.2 },
     gesture = "press", hold = "catch_press", variety = "catch_reel" },
   { id = "scatter", macros = { "density", "size" }, defaults = { 0.45, 0.45 },
     gesture = "burst", variety = "scatter_envelope" },
@@ -43,13 +43,12 @@ local PARTS = {
     gesture = "flip", hold = "tint_flip", variety = "tint_scale" },
   { id = "tone", macros = { "color", "drive" }, defaults = { 0.5, 0.1 },
     gesture = "static", variety = "tone_media" },
-  { id = "air", macros = { "space", "mix" }, defaults = { 0.35, 0.75 },
+  { id = "air", macros = { "space", "mix" }, defaults = { 0.35, 1 },
     gesture = "haze", hold = "air_haze" },
 }
 
 local part = 1
 local held = { false, false, false } -- K1, K2, K3
-local k2_used = false
 local burst, static_env = 0, 0
 local head, filled = 0, 0 -- the write head and how much of the reel is caught (s), mirrored
 -- the tape: the loudest level written to each of WAVE segments of the reel, as the head last
@@ -77,7 +76,7 @@ local function db(v) return v <= -59.9 and 0 or 10 ^ (v / 20) end
 -- the values sound.engine() maps, from the params and the gestures in flight
 local function values()
   return {
-    catch_memory = m("catch_memory"), catch_cross = m("catch_cross"),
+    catch_position = m("catch_position"), catch_feedback = m("catch_feedback"),
     scatter_density = m("scatter_density"), scatter_size = m("scatter_size"),
     tint_pitch = m("tint_pitch"), tint_spread = m("tint_spread"),
     tone_color = m("tone_color"), tone_drive = m("tone_drive"),
@@ -176,7 +175,7 @@ local function add_params()
   end
   params:add_group("pollen_radio", "radio", 5)
   params:add_binary("tune_press", "press while tuning", "toggle", 1)
-  params:add_control("tune_static", "static while tuning", controlspec.new(0, 1, "lin", 0, 0.3, "", 0.01))
+  params:add_control("tune_static", "static while tuning", controlspec.new(0, 1, "lin", 0, 0, "", 0.01))
   params:add_control("crossfade", "crossfade", controlspec.new(0.2, 10, "lin", 0, 2, "s", 0.01))
   params:add_control("timeout", "give a station", controlspec.new(4, 30, "lin", 0, 10, "s", 0.01))
   params:add_trigger("refresh", "refresh the stations")
@@ -209,7 +208,6 @@ function enc(n, d)
       params:delta(P.variety, d)
       say(params:string(P.variety))
     end
-    k2_used = true
   elseif n == 2 or n == 3 then
     params:delta(P.id .. "_" .. P.macros[n - 1], d)
     shown["e" .. n] = 1.2
@@ -237,16 +235,8 @@ end
 
 function key(n, z)
   held[n] = z == 1
-  if n == 2 then
-    if z == 1 then
-      k2_used = false
-      if held[1] then -- hold K1 + K2: back to the station before
-        k2_used = true
-        if radio.back() then say("back") end
-      end
-    elseif not k2_used then -- a K2 tap: drift on with the wind
-      if radio.drift() then say("drifting") end
-    end
+  if n == 2 and z == 1 and held[1] then -- hold K1 + K2: back to the station before
+    if radio.back() then say("back") end
   elseif n == 3 and z == 1 and not held[1] then
     gesture(PARTS[part])
   end

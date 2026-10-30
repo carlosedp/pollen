@@ -2,7 +2,7 @@
   "title": "pollen",
   "subtitle": "the world's radio, carried on the wind, scattered as grains · for monome norns",
   "icon": "doc/img/icon.svg",
-  "about": "A live granular instrument for the world's radio. pollen tunes into a station somewhere on Earth, catches it on a reel (a loop of the last few seconds, drawn as a ring of tape) and scatters it as grains: you choose how far back they reach, how many, how long, how high, and how they're colored. The wind carries you to the next station, near or far, on its own or when you press K2. Press Start sound and listen.",
+  "about": "A live granular instrument for the world's radio. pollen tunes into a station somewhere on Earth, catches it on a reel (a loop of the last few seconds, drawn as tape) and scatters it as grains: you choose how far back they reach, how many, how long, how high, and how they're colored. The wind carries you to the next station, near or far, when you drift (K3 on the wind part), or on its own if you give it a pace. Press Start sound and listen.",
   "more": "pollen is a script for monome norns, a small computer for making sound. What plays here is the real script, running in your browser: the stations are live, from radio-browser.info (here, only the ones whose servers allow a web page to play them), and the engine is rebuilt in Web Audio with the reverb on the same Mutable Instruments code a norns plays. The screen shows pictures, not numbers.",
   "controls": [
     {
@@ -12,10 +12,6 @@
     {
       "keys": "E2 · E3",
       "does": "shape that part; the two knobs show their names while you turn them"
-    },
-    {
-      "keys": "K2",
-      "does": "drift: the wind carries you to another station"
     },
     {
       "keys": "K3",

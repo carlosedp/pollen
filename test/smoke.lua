@@ -136,10 +136,10 @@ assert(here and here ~= loads[1], "no station playing after the silent one")
 for _, u in ipairs(loads) do assert(not u:match("m3u8") and u ~= "https://x/n", "loaded a station it should skip: " .. u) end
 ok("radio: a dead station, then " .. here)
 
--- K2 drifts on; hold K1 + K2 goes back
-press(2); run(6)
+-- K3 on the wind drifts on; hold K1 + K2 goes back
+turn(1, -5); press(3); run(6)
 local there = playing()
-assert(there and there ~= here, "K2 didn't move to another station")
+assert(there and there ~= here, "K3 on the wind didn't move to another station")
 norns_web.key(1, 1); press(2); norns_web.key(1, 0); run(6)
 assert(playing() == here, "K1 + K2 didn't go back: " .. tostring(playing()))
 ok("radio: drift and back")

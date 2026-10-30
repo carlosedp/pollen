@@ -27,15 +27,28 @@ garden's names. Users never see "buffer" or "feedback".
 | ------------------------- | ------------------- | --------------------------------------------------------- |
 | flower, bloom             | station             | a live stream at a place on the globe                     |
 | the wind                  | walker              | what picks the next station, and how                      |
-| drift                     | station change      | moving to the next flower (the globe turns, static plays) |
+| drift                     | station change      | moving to the next flower (the globe turns)               |
 | the reel                  | circular buffer     | the stations you caught, as splices                       |
 | catch                     | record / write head | taking pollen from the current flower                     |
 | press                     | freeze              | a pressed flower: the reel stops recording and keeps it   |
 | scatter                   | grain density, size | how the pollen is thrown                                  |
 | cross-pollinate           | feedback / layering | grains written back into the reel, over the next station  |
-| static, between flowers   | tuning noise        | the sky's hiss while the wind is moving you               |
+| static, between flowers   | tuning noise        | the sky's hiss while the wind is moving you (off by default) |
 | the herbarium             | favorites           | flowers you kept (K1 + K3)                                |
 | the seed vault            | offline recordings  | stations kept as files, to play with no network           |
+
+The macros on screen use plain words where the garden's didn't say what they do: catch's are
+*position* and *feedback* (they were *memory* and *cross*). Played, three things got in the way of
+hearing what pollen does, so the defaults changed (October 2026):
+
+- **The wind is still by default** (pace at its left: by hand only). Moving on its own every 64
+  beats changed the sound faster than you could follow what the grains were doing to it.
+- **The mix starts at the grains alone.** With the radio under them, the grains were hard to hear
+  as grains.
+- **No static while tuning by default.** The hiss felt out of place; the pressed reel already
+  carries the old station across. It stays in PARAMS (*static while tuning*).
+
+Drifting is K3 on the wind part only: a K2 tap did the same, and two keys for it was one too many.
 
 Wind kinds (the walk modes from SPEC §4.6, renamed for the screen):
 
@@ -180,13 +193,13 @@ that.
 | ---------------- | --------------------------------------------------------------------- |
 | the reel         | a waveform, stretched between its quietest and loudest (broadcasts are compressed) |
 | the write head   | a bright bar sweeping left to right; the newest sound is brightest behind it |
-| memory           | the bracket under the tape: where the grains are read, and how wide   |
+| position         | the bracket under the tape: where the grains are read, and how wide   |
 | density          | how many grains leave the tape                                        |
 | size             | how long each grain's dash is, and how long it lives                  |
 | pitch            | how fast they move (lower is slower)                                  |
 | reverse          | backwards grains go down from the tape, forwards ones up              |
 | press (freeze)   | the head stops, the whole tape evenly lit, nothing flows in           |
-| cross-pollinate  | grains turn back and land on the tape again                           |
+| feedback         | grains turn back and land on the tape again                           |
 | air (reverb)     | a haze over the tape                                                  |
 
 ### Controls (terrarium's grammar)
@@ -196,8 +209,8 @@ each with a bar for where it is.
 
 | part    | E2 / E3                                  | K3 gesture      | hold K2 + E2 (variant) |
 | ------- | ---------------------------------------- | --------------- | ---------------------- |
-| wind    | pace (how often) · reach (how far)       | drift now       | wind kind              |
-| catch   | memory (how far back) · cross (feedback) | press / release | splice to scatter from |
+| wind    | pace (how often) · reach (how far)       | drift now (the only drift key) | wind kind |
+| catch   | position (how far back) · feedback       | press / release | splice to scatter from |
 | scatter | density · size                           | a burst         | envelope shape         |
 | tint    | pitch (in the key) · spread / reverse    | flip direction  | scale                  |
 | air     | space · mix                              | static burst    | filter type            |

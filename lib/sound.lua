@@ -43,16 +43,16 @@ function S.pitch(m, scale)
   return S.quantize(x * 24, scale)
 end
 
--- v: catch_memory, catch_cross, scatter_density, scatter_size, tint_pitch, tint_spread,
+-- v: catch_position, catch_feedback, scatter_density, scatter_size, tint_pitch, tint_spread,
 -- tone_color, tone_drive, air_space, air_mix (0..1 each), and reel (s), envelope, media,
 -- scale (indexes), frozen, flipped, hazed (booleans), burst (0..1, decaying)
 function S.engine(v)
   local e = {}
-  -- catch: memory reaches back into the reel (squared: fine control near "now");
-  -- cross feeds the grains back into it
-  e.position = v.reel * (0.002 + 0.9 * v.catch_memory ^ 2)
-  e.pos_spread = 0.01 + 0.2 * v.catch_memory
-  e.fb = 0.85 * v.catch_cross ^ 1.5
+  -- catch: position reaches back into the reel (squared: fine control near "now");
+  -- feedback writes the grains back into it
+  e.position = v.reel * (0.002 + 0.9 * v.catch_position ^ 2)
+  e.pos_spread = 0.01 + 0.2 * v.catch_position
+  e.fb = 0.85 * v.catch_feedback ^ 1.5
   e.freeze = v.frozen and 1 or 0
 
   -- scatter: density 0.5..40 grains a second (more in a burst), size 20 ms..2 s; the
