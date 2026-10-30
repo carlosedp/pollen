@@ -1,6 +1,8 @@
 -- The radio: the stations, the wind and the player, together. Moving to a new station
--- (drifting) goes: press the reel and bring in the static, load the next station on the idle
--- player, wait until it really plays, crossfade, let the reel catch it, release. A station
+-- (drifting) goes: tuning (the script may press the reel and bring in some static), load the
+-- next station on the idle player, wait until it really plays, crossfade (as long as the
+-- settings say: a whole pass of the reel, to blend the new station over the old), let the reel
+-- catch it, done. A station
 -- that doesn't play in time is marked dead (for an hour) and the wind tries another.
 -- Stateful: include it only from pollen.lua.
 --
@@ -47,15 +49,18 @@ local function is_dead(st)
   return d ~= nil and os.time() - d < R.DEAD_FOR
 end
 
+-- volume steps twice a second (at least 12), so a long crossfade is smooth
 local function crossfade(to, s)
-  local from, steps = live, 12
+  local from = live
+  local time = from ~= to and s.xfade or math.min(s.xfade, 2) -- the first station just fades in
+  local steps = math.max(12, math.ceil(time * 2))
   for i = 1, steps do
     local v = i / steps
     Player.send(to, { "set_property", "volume", math.floor(100 * v * s.volume + 0.5) })
     if from ~= to then -- the first station has nothing to fade from
       Player.send(from, { "set_property", "volume", math.floor(100 * (1 - v) * s.volume + 0.5) })
     end
-    clock.sleep(s.xfade / steps)
+    clock.sleep(time / steps)
   end
   if from ~= to then Player.send(from, { "stop" }) end
 end
@@ -87,14 +92,14 @@ local function move()
         end
       end
       if arrived then
-        crossfade(idle, s)
-        live = idle
         R.current = st
         history[#history + 1] = st
         if #history > 32 then table.remove(history, 1) end
         hooks.arrived(st)
         set_status("playing")
         print(("pollen: %s (%s), %s"):format(st.name, st.place ~= "" and (st.place .. ", " .. st.country) or st.country, st.url))
+        crossfade(idle, s)
+        live = idle
         clock.sleep(s.settle) -- the reel catches the new station before it's released
         break
       end

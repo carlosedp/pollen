@@ -37,19 +37,20 @@ local PARTS = {
     gesture = "drift", variety = "wind_kind" },
   { id = "catch", macros = { "position", "feedback" }, defaults = { 0.3, 0.2 },
     gesture = "press", hold = "catch_press", variety = "catch_reel" },
-  { id = "scatter", macros = { "density", "size" }, defaults = { 0.45, 0.45 },
+  { id = "scatter", macros = { "density", "size" }, defaults = { 0.45, 0.65 },
     gesture = "burst", variety = "scatter_envelope" },
   { id = "tint", macros = { "pitch", "spread" }, defaults = { 0.5, 0.15 },
     gesture = "flip", hold = "tint_flip", variety = "tint_scale" },
   { id = "tone", macros = { "color", "drive" }, defaults = { 0.5, 0.1 },
-    gesture = "static", variety = "tone_media" },
+    gesture = "fade", variety = "tone_media" },
   { id = "air", macros = { "space", "mix" }, defaults = { 0.35, 1 },
     gesture = "haze", hold = "air_haze" },
 }
 
 local part = 1
 local held = { false, false, false } -- K1, K2, K3
-local burst, static_env = 0, 0
+local burst, fading = 0, 0 -- the gestures in flight (fading: 1 down to 0)
+local FADE = 2.5 -- s, a fade's length
 local head, filled = 0, 0 -- the write head and how much of the reel is caught (s), mirrored
 -- the tape: the loudest level written to each of WAVE segments of the reel, as the head last
 -- passed it (from the engine's amp_reel poll); a pressed reel keeps what's there
@@ -60,18 +61,23 @@ wipe()
 local sent = {}
 local reel_now = 15 -- the engine's reel (s)
 local shown = { part = 0, e2 = 0, e3 = 0, word = 0, station = 0 } -- seconds left for each overlay
-local tuning = false -- moving between stations: the reel is pressed (if set) and the static plays
+local tuning = false -- moving between stations: the reel pressed (if the handover is), static (if set)
 local station, status = nil, "starting"
 local seeking, trail, amp = nil, {}, 0 -- the station being tried, the last ones, the level written
--- pace: how often the wind moves on its own, in beats of the norns clock (nil: only by hand)
-local PACES = { false, 64, 32, 16, 8, 4 }
+-- pace: how often the wind moves on its own, in seconds (false: only by hand)
+local PACES = { false, 600, 300, 120, 60, 30 }
 local word = ""
 local redraw_metro
 
 local function m(id) return params:get(id) end
-local function pressed() return m("catch_press") == 1 or (tuning and m("tune_press") == 1) end
-local function pace_beats() return PACES[math.min(#PACES, 1 + math.floor(m("wind_pace") * #PACES))] end
+local function pressed() return m("catch_press") == 1 or (tuning and m("handover") == 2) end
+local function pace_s() return PACES[math.min(#PACES, 1 + math.floor(m("wind_pace") * #PACES))] end
 local function db(v) return v <= -59.9 and 0 or 10 ^ (v / 20) end
+
+-- a fade (tone's gesture), like a shortwave signal fading: for a moment the sound sinks and
+-- darkens, the filter closing toward its low end, then it comes back
+local function fade_amount() return math.sin(math.pi * fading) end
+local function fade_color(c) return c + (0.08 - c) * 0.85 * fade_amount() end
 
 -- the values sound.engine() maps, from the params and the gestures in flight
 local function values()
@@ -79,7 +85,7 @@ local function values()
     catch_position = m("catch_position"), catch_feedback = m("catch_feedback"),
     scatter_density = m("scatter_density"), scatter_size = m("scatter_size"),
     tint_pitch = m("tint_pitch"), tint_spread = m("tint_spread"),
-    tone_color = m("tone_color"), tone_drive = m("tone_drive"),
+    tone_color = fade_color(m("tone_color")), tone_drive = m("tone_drive"),
     air_space = m("air_space"), air_mix = m("air_mix"),
     reel = S.REELS[m("catch_reel")], envelope = m("scatter_envelope"), media = m("tone_media"),
     scale = m("tint_scale"),
@@ -91,9 +97,9 @@ end
 -- send whatever changed since last time
 local function send()
   local e = S.engine(values())
-  e.level = db(m("level"))
+  e.level = db(m("level")) * (1 - 0.6 * fade_amount())
   e.adc = db(m("input"))
-  e.static = math.max(m("static"), static_env, tuning and m("tune_static") or 0)
+  e.static = math.max(m("static"), tuning and m("tune_static") or 0)
   for k, v in pairs(e) do
     if sent[k] ~= v then
       engine.set(k, v)
@@ -174,9 +180,12 @@ local function add_params()
     end
   end
   params:add_group("pollen_radio", "radio", 5)
-  params:add_binary("tune_press", "press while tuning", "toggle", 1)
+  -- how a new station comes in: blended over the reel (crossfaded over one pass of the head, so
+  -- the reel turns from the old station to the new as it's written over), or with the reel
+  -- pressed while it loads and then a quick crossfade
+  params:add_option("handover", "handover", { "over the reel", "pressed" }, 1)
   params:add_control("tune_static", "static while tuning", controlspec.new(0, 1, "lin", 0, 0, "", 0.01))
-  params:add_control("crossfade", "crossfade", controlspec.new(0.2, 10, "lin", 0, 2, "s", 0.01))
+  params:add_control("crossfade", "crossfade (pressed)", controlspec.new(0.2, 10, "lin", 0, 2, "s", 0.01))
   params:add_control("timeout", "give a station", controlspec.new(4, 30, "lin", 0, 10, "s", 0.01))
   params:add_trigger("refresh", "refresh the stations")
   params:set_action("refresh", function() radio.refresh() end)
@@ -224,9 +233,9 @@ local function gesture(P)
   elseif P.gesture == "burst" then
     burst = 1
     say("burst")
-  elseif P.gesture == "static" then
-    static_env = 1
-    say("static")
+  elseif P.gesture == "fade" then
+    fading = 1
+    say("fading")
   elseif P.gesture == "drift" then
     if radio.drift() then say("drifting") end
   end
@@ -252,8 +261,8 @@ local function look()
     density = e.density, size = e.size, rate = 2 ^ (e.pitch / 12), reverse = e.reverse,
     age = e.position, pos_spread = e.pos_spread, fb = e.fb,
     space = m("air_space"), hazed = m("air_haze") == 1,
-    color = m("tone_color"), drive = e.drive, media = m("tone_media"),
-    static = math.max(m("static"), static_env),
+    color = fade_color(m("tone_color")), drive = e.drive, media = m("tone_media"),
+    static = math.max(m("static"), tuning and m("tune_static") or 0),
     wave = wave, amp = amp,
     stations = radio.stations, here = station, seeking = seeking, trail = trail,
   }
@@ -337,7 +346,7 @@ function redraw()
     -- the top right, over the tape: a gesture's word, or tuning, or the station's name (bright
     -- as it arrives); under the tape, its place, or the radio's state when it isn't playing
     if shown.word > 0 then text(126, 8, word, 12 * math.min(1, shown.word), "right")
-    elseif tuning then text(126, 8, "tuning", 5 + 5 * math.abs(math.sin(util.time() * 4)), "right")
+    elseif seeking then text(126, 8, "tuning", 5 + 5 * math.abs(math.sin(util.time() * 4)), "right")
     elseif station then text(126, 8, fit(station.name, 64), 4 + 9 * math.min(1, shown.station), "right") end
     if station and status == "playing" or status == "tuning" then
       if station then text(126, 52, short_place(station, 64), 3 + 7 * math.min(1, shown.station), "right") end
@@ -367,9 +376,9 @@ local function tick()
     filled = math.min(reel, filled + dt)
   end
   for k, v in pairs(shown) do shown[k] = math.max(0, v - dt) end
-  if burst > 0 or static_env > 0 then
+  if burst > 0 or fading > 0 then
     burst = math.max(0, burst - dt / 1.5)
-    static_env = math.max(0, static_env - dt / 1.2)
+    fading = math.max(0, fading - dt / FADE)
     send()
   end
   view.update(dt, look())
@@ -409,17 +418,19 @@ function init()
     end,
     status = function(s) status = s end,
     settings = function()
-      return { kind = W.KINDS[m("wind_kind")].id, reach = m("wind_reach"), xfade = m("crossfade"),
+      local over = m("handover") == 1
+      return { kind = W.KINDS[m("wind_kind")].id, reach = m("wind_reach"),
+        xfade = over and S.REELS[m("catch_reel")] or m("crossfade"),
         timeout = m("timeout"), settle = 1.5, volume = 1 }
     end,
   })
   clock.run(function()
-    local beats = 0
+    local waited = 0
     while true do
-      clock.sync(1)
-      beats = beats + 1
-      local every = pace_beats()
-      if every and beats >= every and radio.drift() then beats = 0 end
+      clock.sleep(1)
+      waited = waited + 1
+      local every = pace_s()
+      if every and waited >= every and radio.drift() then waited = 0 end
     end
   end)
 end

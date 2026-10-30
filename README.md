@@ -36,7 +36,7 @@ from Clouds and Rings; without them, FreeVerb2.
 | ------------ | ---------------------------------------------------------------------------------------- |
 | E1           | choose a part: wind, catch, scatter, tint, tone, air                                     |
 | E2, E3       | that part's two macros (their names and bars show for a moment while you turn them)               |
-| K3           | its gesture: drift (wind), press the reel (catch), a burst (scatter), backwards (tint), static (tone), hold the haze (air) |
+| K3           | its gesture: drift (wind), press the reel (catch), a burst (scatter), backwards (tint), a fade (tone), hold the haze (air) |
 | hold K2 + E2 | its variety: the wind (wind), reel length (catch), grain envelope (scatter), scale (tint), media (tone) |
 | hold K1      | peek: every part and where its macros are, and the station                               |
 | hold K1 + K2 | back to the station before                                                               |
@@ -46,7 +46,7 @@ K2, turn E2). The bars beside the names show where each macro is.
 
 **wind**: when and where the radio moves to the next station.
 - *pace* (E2): how often it moves on by itself. All the way left (where it starts) it only moves
-  when you drift (K3); then every 64, 32, 16, 8 or 4 beats of the norns clock.
+  when you drift (K3); then every 10, 5, 2 or 1 minutes, or every 30 seconds.
 - *reach* (E3): how far a move goes. Left stays close, a city or two away; right crosses
   continents.
 - K3 *drift*: move on to the next station now.
@@ -86,7 +86,8 @@ K2, turn E2). The bars beside the names show where each macro is.
   closes, darker and muffled. Turn right and a high-pass opens, thinner. It rings more toward
   either end.
 - *drive* (E3): saturation, from clean to crunchy.
-- K3 *static*: a burst of radio static.
+- K3 *fade*: like a shortwave signal fading: for a moment the sound sinks and darkens, then
+  comes back.
 - variety, *media*: what the sound passes through, after Beads: digital (clean), vintage (a
   lo-fi sampler), clean tape, dirty tape.
 
@@ -97,9 +98,11 @@ K2, turn E2). The bars beside the names show where each macro is.
 
 **The wind** picks the next station: a *breeze* drifts to one of the nearest, a *trade wind*
 carries on along one bearing, an *eddy* wanders, a *gust* goes anywhere, the *far side* jumps to
-the other side of the world and back. Moving to a station presses the reel (and can play a little static: *static while
-tuning* in PARAMS), so the last station keeps sounding as grains until the next one is caught; a station that
-doesn't play in time is skipped. Its name and place show as you arrive (and on a K1 peek).
+the other side of the world and back. While the next station loads, the last one keeps playing. Once it's really playing, the two
+crossfade over one pass of the reel, so the head writes the new station over the old a little
+more each moment and the grains travel from one place to the other. (In PARAMS, *handover* can
+instead press the reel while tuning and crossfade quickly, and *static while tuning* adds some
+hiss.) A station that doesn't play in time is skipped. Its name and place show as you arrive (and on a K1 peek).
 
 The screen has two halves. On the left, the globe: every station is a dot, the one playing is at
 the middle sending out radio waves as loud as it is, the wind's last moves are its trail, and

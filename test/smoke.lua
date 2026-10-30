@@ -137,23 +137,24 @@ for _, u in ipairs(loads) do assert(not u:match("m3u8") and u ~= "https://x/n", 
 ok("radio: a dead station, then " .. here)
 
 -- K3 on the wind drifts on; hold K1 + K2 goes back
-turn(1, -5); press(3); run(6)
+-- (a move blends over one pass of the 15 s reel)
+turn(1, -5); press(3); run(20)
 local there = playing()
 assert(there and there ~= here, "K3 on the wind didn't move to another station")
-norns_web.key(1, 1); press(2); norns_web.key(1, 0); run(6)
+norns_web.key(1, 1); press(2); norns_web.key(1, 0); run(20)
 assert(playing() == here, "K1 + K2 didn't go back: " .. tostring(playing()))
 ok("radio: drift and back")
 
--- the pace: every 4 beats (2 s at 120 bpm), the wind moves on by itself
+-- the pace: at its quickest, every 30 s, the wind moves on by itself
 params:set("wind_pace", 1)
 local before_auto = #loads
-run(12)
+run(75)
 assert(#loads >= before_auto + 2, "the pace didn't move the wind")
 params:set("wind_pace", 0)
 ok("radio: the pace moves it")
 
 -- every wind
-for k = 1, #W_KINDS do params:set("wind_kind", k); press(2); run(5) end
+for k = 1, #W_KINDS do params:set("wind_kind", k); press(3); run(20) end
 ok("radio: every wind")
 
 -- the cache: a fresh start reads it instead of fetching

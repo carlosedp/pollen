@@ -45,8 +45,16 @@ hearing what pollen does, so the defaults changed (October 2026):
   beats changed the sound faster than you could follow what the grains were doing to it.
 - **The mix starts at the grains alone.** With the radio under them, the grains were hard to hear
   as grains.
-- **No static while tuning by default.** The hiss felt out of place; the pressed reel already
-  carries the old station across. It stays in PARAMS (*static while tuning*).
+- **No static while tuning by default.** The hiss felt out of place. It stays in PARAMS (*static
+  while tuning*). Tone's K3 was a static burst too, and felt cheesy: it's now a **fade**, a
+  shortwave signal fading (the level sinks and the low-pass closes for 2.5 s, then both return).
+- **The pace is in minutes** (10, 5, 2, 1, or 30 s), not beats of the clock: a station is
+  somewhere to stay a while, not a step in a sequence.
+- **A new station blends in over the reel.** The old one keeps playing while the next loads, then
+  they crossfade over one pass of the write head. Each moment of the reel is written over with a
+  little more of the new station than the last, so the grains travel from one place to the other.
+  The pressed handover (the reel held while tuning, a quick crossfade) is the other choice, in
+  PARAMS (*handover*).
 
 Drifting is K3 on the wind part only: a K2 tap did the same, and two keys for it was one too many.
 
@@ -207,13 +215,14 @@ that.
 E1 picks a part. Each part has two macros, and their names show for a moment while you turn them,
 each with a bar for where it is.
 
-| part    | E2 / E3                                  | K3 gesture      | hold K2 + E2 (variant) |
-| ------- | ---------------------------------------- | --------------- | ---------------------- |
-| wind    | pace (how often) · reach (how far)       | drift now (the only drift key) | wind kind |
-| catch   | position (how far back) · feedback       | press / release | splice to scatter from |
-| scatter | density · size                           | a burst         | envelope shape         |
-| tint    | pitch (in the key) · spread / reverse    | flip direction  | scale                  |
-| air     | space · mix                              | static burst    | filter type            |
+| part    | E2 / E3                                  | K3 gesture         | hold K2 + E2 (variety) |
+| ------- | ---------------------------------------- | ------------------ | ---------------------- |
+| wind    | pace (how often) · reach (how far)       | drift now (the only drift key) | wind kind  |
+| catch   | position (how far back) · feedback       | press / release    | reel length            |
+| scatter | density · size                           | a burst            | envelope shape         |
+| tint    | pitch (in the key) · spread / reverse    | flip direction     | scale                  |
+| tone    | color (one-knob filter) · drive          | a fade             | media                  |
+| air     | space · mix                              | hold the haze      | (none)                 |
 
 - **K1 is hold-only** (a tap opens the system menu). Hold K1 to peek at the station and place
   name, the reel's petals and the wind. **K1 + K2:** go back a flower (history). **K1 + K3:** keep
