@@ -171,6 +171,7 @@ for part = 1, 6 do
   norns_web.key(2, 1)
   turn(2, 1, 8); run(0.5)
   turn(2, -1, 8)
+  turn(3, 1, 8); run(0.5) -- the second variety, where there is one
   norns_web.key(2, 0)
   ok("part " .. part)
 end
@@ -194,7 +195,7 @@ local sc = io.open("lib/Engine_Pollen.sc"):read("a")
 local js = io.open("lib/Engine_Pollen.js"):read("a")
 local controls = {}
 for args in sc:gmatch("SynthDef%(\\pollen_%w+, { |(.-)|") do
-  for name in args:gmatch("([%a_]+)%s*=") do controls[name] = true end
+  for name in args:gmatch("([%a_][%w_]*)%s*=") do controls[name] = true end
 end
 for k, s in pairs(sets) do
   assert(controls[k], "engine.set('" .. k .. "'): no SynthDef control by that name")
@@ -208,6 +209,9 @@ end
 range("density", 0.1, 200); range("size", 0.005, 4); range("mix", 0, 1); range("fb", 0, 0.95)
 range("cutoff", 20, 20000); range("position", 0, 60); range("reverse", 0, 1)
 range("ftype", 0, 3); range("media", 0, 3); range("env", 0, 2); range("static", 0, 1)
+range("heads", 1, 4); range("hgap", 0, 60)
+for k = 1, 3 do range("hp" .. k, 0, 24) end
+assert(sets.heads.max == 4 and sets.hp3.max > 0, "the heads and their intervals never reached the engine")
 -- one engine.reel per change, none for the 15 s the engine starts with: the catch part's
 -- variety walk (15 -> 60: 2, 60 -> 4: 4) and the loop over every length (4, then back to 15: 5)
 assert(calls.reel == 11, "reel: expected 11 changes, got " .. tostring(calls.reel))

@@ -98,21 +98,27 @@ Engine_Pollen : CroneEngine {
 
 		// the grains: each one starts `position` seconds behind the write head (plus a
 		// random part of the reel), with its own pitch, direction and place in the stereo field.
+		// Up to four heads: each grain picks one, which reads hgap further back than the one
+		// before it and plays hp1..hp3 semitones from the first.
 		// A forward grain faster than the head starts far enough back not to overtake it.
 		SynthDef(\pollen_grains, { |bufL, bufR, headBus, out, fbBus, penv, benv,
 			density = 8, jitter = 0.3, size = 0.15, position = 0.5, pos_spread = 0.05,
-			pitch = 0, pitch_spread = 0, reverse = 0, spread = 0.5, env = 0, amp = 0.5, freeze = 0|
+			pitch = 0, pitch_spread = 0, reverse = 0, spread = 0.5, env = 0, amp = 0.5, freeze = 0,
+			heads = 1, hgap = 0, hp1 = 0, hp2 = 0, hp3 = 0|
 			var sr = BufSampleRate.kr(bufL), frames = BufFrames.kr(bufL), len = frames / sr;
 			var dur = size.clip(0.005, 4);
 			var dens = density.clip(0.1, 200).min(28 / dur); // at most ~28 grains at once (32 voices)
 			var trig = CoinGate.ar(1 - jitter, Impulse.ar(dens)) + CoinGate.ar(jitter, Dust.ar(dens));
 			var rPos = TRand.ar(0, 1, trig), rPitch = TRand.ar(-1, 1, trig);
 			var rDir = TRand.ar(0, 1, trig), rPan = TRand.ar(-1, 1, trig);
+			var nh = heads.round.clip(1, 4);
+			var h = TRand.ar(0, nh, trig).floor.min(nh - 1);
+			var hp = (BinaryOpUGen('==', h, 1) * hp1) + (BinaryOpUGen('==', h, 2) * hp2) + (BinaryOpUGen('==', h, 3) * hp3);
 			var dir = 1 - (2 * (rDir < reverse));
-			var rate = (pitch + (pitch_spread * rPitch)).midiratio * dir;
+			var rate = (pitch + hp + (pitch_spread * rPitch)).midiratio * dir;
 			var run = freeze < 0.5;
 			var minAge = ((rate.max(0) - run).max(0) * dur) + 0.005;
-			var age = (position + (pos_spread * len * rPos)).max(minAge);
+			var age = (position + (h * hgap) + (pos_spread * len * rPos)).max(minAge);
 			var pos = ((In.kr(headBus) - (age * sr)).wrap(0, frames)) / frames;
 			var envbuf = Select.kr(env, [-1, penv, benv]);
 			var l = GrainBuf.ar(1, trig, dur, bufL, rate, pos, 2, 0, envbuf, 32);

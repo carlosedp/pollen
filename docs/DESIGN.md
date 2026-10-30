@@ -215,14 +215,22 @@ that.
 E1 picks a part. Each part has two macros, and their names show for a moment while you turn them,
 each with a bar for where it is.
 
-| part    | E2 / E3                                  | K3 gesture         | hold K2 + E2 (variety) |
-| ------- | ---------------------------------------- | ------------------ | ---------------------- |
-| wind    | pace (how often) · reach (how far)       | drift now (the only drift key) | wind kind  |
-| catch   | position (how far back) · feedback       | press / release    | reel length            |
-| scatter | density · size                           | a burst            | envelope shape         |
-| tint    | pitch (in the key) · spread / reverse    | flip direction     | scale                  |
-| tone    | color (one-knob filter) · drive          | a fade             | media                  |
-| air     | space · mix                              | hold the haze      | (none)                 |
+| part    | E2 / E3                                  | K3 gesture         | hold K2 + E2 (variety) | hold K2 + E3       |
+| ------- | ---------------------------------------- | ------------------ | ---------------------- | ------------------ |
+| wind    | pace (how often) · reach (how far)       | drift now (the only drift key) | wind kind  |                    |
+| catch   | position (how far back) · feedback       | press / release    | reel length            | heads (1–4)        |
+| scatter | density · size                           | a burst            | envelope shape         |                    |
+| tint    | pitch (in the key) · spread / reverse    | flip direction     | scale                  | heads apart (steps) |
+| tone    | color (one-knob filter) · drive          | a fade             | media                  |                    |
+| air     | space · mix                              | hold the haze      | (none)                 |                    |
+
+**Heads.** Up to four read heads, the bees of the reel: each grain picks one at random, so they
+share the density (the CPU follows the grains, not the heads). They sit evenly spread along the
+reel behind the first, which position moves (`hgap` = reel / heads), so the station plays now and
+seconds ago at once, a canon of grains. Tint's *heads apart* puts each one a number of scale steps
+above the one before (`hp1..hp3`, worked out in `lib/sound.lua`, folded down by octaves to stay
+within two of the first), so four heads in major or minor make a chord of the radio. The engine
+takes only the count, the gap and the three offsets.
 
 - **K1 is hold-only** (a tap opens the system menu). Hold K1 to peek at the station and place
   name, the reel's petals and the wind. **K1 + K2:** go back a flower (history). **K1 + K3:** keep

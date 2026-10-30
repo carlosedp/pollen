@@ -8,6 +8,11 @@
 local S = {}
 
 S.REELS = { 4, 8, 15, 30, 60 } -- seconds
+S.HEADS = { "1 head", "2 heads", "3 heads", "4 heads" } -- the grains' read heads
+-- how far apart the heads play, in steps of the scale (each head one more than the last)
+S.INTERVALS = { { name = "unison", steps = 0 }, { name = "a step apart", steps = 1 },
+  { name = "two steps apart", steps = 2 }, { name = "three steps apart", steps = 3 },
+  { name = "four steps apart", steps = 4 } }
 S.ENVELOPES = { "bell", "pluck", "block" } -- engine env 0, 1, 2
 S.MEDIA = { "digital", "vintage", "clean tape", "dirty tape" } -- after Beads' media
 S.SCALES = {
@@ -36,6 +41,23 @@ function S.quantize(semis, scale)
   return best
 end
 
+-- n steps of the scale up from a note of it (free: n semitones)
+function S.step(semis, scale, n)
+  local steps = S.SCALES[scale].steps
+  if not steps or n == 0 then return semis + (steps and 0 or n) end
+  local k = #steps
+  -- the note's place in the scale, counted across octaves
+  local idx
+  for oct = -4, 4 do
+    for i, st in ipairs(steps) do
+      if oct * 12 + st == semis then idx = (oct + 4) * k + (i - 1) end
+    end
+  end
+  if not idx then return semis + n end
+  idx = idx + n
+  return (idx // k - 4) * 12 + steps[idx % k + 1]
+end
+
 -- the semitones the tint's pitch macro plays: -24..+24, 0 in the middle (a dead zone)
 function S.pitch(m, scale)
   local x = (m - 0.5) * 2
@@ -45,7 +67,7 @@ end
 
 -- v: catch_position, catch_feedback, scatter_density, scatter_size, tint_pitch, tint_spread,
 -- tone_color, tone_drive, air_space, air_mix (0..1 each), and reel (s), envelope, media,
--- scale (indexes), frozen, flipped, hazed (booleans), burst (0..1, decaying)
+-- scale, heads, interval (indexes), frozen, flipped, hazed (booleans), burst (0..1, decaying)
 function S.engine(v)
   local e = {}
   -- catch: position reaches back into the reel (squared: fine control near "now");
@@ -69,6 +91,15 @@ function S.engine(v)
   -- sends some grains backwards. Flipped turns that around: mostly backwards.
   e.pitch = S.pitch(v.tint_pitch, v.scale)
   e.pitch_spread = 12 * v.tint_spread ^ 2
+  -- the heads: spread evenly along the reel, each one the interval up the scale from the last
+  local heads = v.heads or 1
+  e.heads, e.hgap = heads, v.reel / heads
+  local steps = S.INTERVALS[v.interval or 1].steps
+  for k = 1, 3 do
+    local off = k < heads and S.step(e.pitch, v.scale, k * steps) - e.pitch or 0
+    while off > 24 do off = off - 12 end -- folded down by octaves: at most two above the first
+    e["hp" .. k] = off
+  end
   local rev = clamp((v.tint_spread - 0.5) * 1.2, 0, 0.6)
   e.reverse = v.flipped and 1 - rev or rev
 

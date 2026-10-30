@@ -8,6 +8,9 @@
 -- K3 its gesture
 --   (on the wind: drift)
 -- hold K2 + E2: its variety
+-- hold K2 + E3: the heads
+--   (catch: how many;
+--   tint: how far apart)
 -- hold K1: peek
 -- hold K1 + K2: back a station
 --
@@ -31,16 +34,17 @@ local W = include("lib/walker")
 local FPS = 15
 
 -- the parts of pollen, each with two macros (E2, E3), a gesture (K3) and a variety
--- (hold K2 + E2). A gesture that holds a state keeps it in a param, so presets save it.
+-- (hold K2 + E2; some have a second, hold K2 + E3).
+-- A gesture that holds a state keeps it in a param, so presets save it.
 local PARTS = {
   { id = "wind", macros = { "pace", "reach" }, defaults = { 0, 0.3 },
     gesture = "drift", variety = "wind_kind" },
   { id = "catch", macros = { "position", "feedback" }, defaults = { 0.3, 0.2 },
-    gesture = "press", hold = "catch_press", variety = "catch_reel" },
+    gesture = "press", hold = "catch_press", variety = "catch_reel", variety2 = "catch_heads" },
   { id = "scatter", macros = { "density", "size" }, defaults = { 0.45, 0.65 },
     gesture = "burst", variety = "scatter_envelope" },
   { id = "tint", macros = { "pitch", "spread" }, defaults = { 0.5, 0.15 },
-    gesture = "flip", hold = "tint_flip", variety = "tint_scale" },
+    gesture = "flip", hold = "tint_flip", variety = "tint_scale", variety2 = "tint_heads" },
   { id = "tone", macros = { "color", "drive" }, defaults = { 0.5, 0.1 },
     gesture = "fade", variety = "tone_media" },
   { id = "air", macros = { "space", "mix" }, defaults = { 0.35, 1 },
@@ -88,7 +92,7 @@ local function values()
     tone_color = fade_color(m("tone_color")), tone_drive = m("tone_drive"),
     air_space = m("air_space"), air_mix = m("air_mix"),
     reel = S.REELS[m("catch_reel")], envelope = m("scatter_envelope"), media = m("tone_media"),
-    scale = m("tint_scale"),
+    scale = m("tint_scale"), heads = m("catch_heads"), interval = m("tint_heads"),
     frozen = pressed(), flipped = m("tint_flip") == 1, hazed = m("air_haze") == 1,
     burst = burst,
   }
@@ -135,7 +139,7 @@ end
 
 local function add_params()
   local macro_spec = function(d) return controlspec.new(0, 1, "lin", 0, d, "", 0.01) end
-  local counts = { wind = 4, catch = 4, scatter = 3, tint = 4, tone = 3, air = 3 }
+  local counts = { wind = 4, catch = 5, scatter = 3, tint = 5, tone = 3, air = 3 }
   for _, P in ipairs(PARTS) do
     params:add_group("pollen_" .. P.id, P.id, counts[P.id])
     for i, name in ipairs(P.macros) do
@@ -162,6 +166,8 @@ local function add_params()
         view.reset()
         send()
       end)
+      params:add_option("catch_heads", "heads", S.HEADS, 1)
+      params:set_action("catch_heads", send)
     elseif P.id == "scatter" then
       params:add_option("scatter_envelope", "envelope", S.ENVELOPES, 1)
       params:set_action("scatter_envelope", send)
@@ -170,6 +176,10 @@ local function add_params()
       for i, s in ipairs(S.SCALES) do names[i] = s.name end
       params:add_option("tint_scale", "scale", names, 2)
       params:set_action("tint_scale", send)
+      local iv = {}
+      for i, s in ipairs(S.INTERVALS) do iv[i] = s.name end
+      params:add_option("tint_heads", "heads apart", iv, 1)
+      params:set_action("tint_heads", send)
     elseif P.id == "tone" then
       params:add_option("tone_media", "media", S.MEDIA, 1)
       params:set_action("tone_media", send)
@@ -212,10 +222,11 @@ function enc(n, d)
   if n == 1 then
     part = util.clamp(part + d, 1, #PARTS)
     shown.part = 1.5
-  elseif held[2] and n == 2 then
-    if P.variety then
-      params:delta(P.variety, d)
-      say(params:string(P.variety))
+  elseif held[2] and (n == 2 or n == 3) then
+    local v = n == 2 and P.variety or P.variety2
+    if v then
+      params:delta(v, d)
+      say(params:string(v))
     end
   elseif n == 2 or n == 3 then
     params:delta(P.id .. "_" .. P.macros[n - 1], d)
@@ -260,6 +271,7 @@ local function look()
     reel = S.REELS[m("catch_reel")], head = head, filled = filled, frozen = pressed(),
     density = e.density, size = e.size, rate = 2 ^ (e.pitch / 12), reverse = e.reverse,
     age = e.position, pos_spread = e.pos_spread, fb = e.fb,
+    heads = e.heads, hgap = e.hgap, hp = { e.hp1, e.hp2, e.hp3 },
     space = m("air_space"), hazed = m("air_haze") == 1,
     color = fade_color(m("tone_color")), drive = e.drive, media = m("tone_media"),
     static = math.max(m("static"), tuning and m("tune_static") or 0),

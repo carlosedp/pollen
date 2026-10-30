@@ -13,7 +13,8 @@
 -- V.update(dt, st) moves things; V.draw(st) draws them. st is what the sound and the radio are
 -- doing, in the script's terms (see look() in pollen.lua): reel, head, filled, frozen, density,
 -- size, rate, reverse, age, pos_spread, fb, space, hazed, color, drive, media, static, wave
--- (the tape: a level 0..1 for each of #wave segments of the reel), amp (what's being written
+-- (the tape: a level 0..1 for each of #wave segments of the reel), heads, hgap (s apart),
+-- hp (each head's semitones above the first, by head 1..3), amp (what's being written
 -- now), stations, here (the station playing), seeking (the one being tried), trail (the last
 -- stations, oldest first).
 
@@ -274,11 +275,15 @@ local function draw_tape(st)
   rect(hx, TY - HMAX - 3, 1, 2 * HMAX + 7, st.frozen and 9 or 15)
   -- the window the grains are read from: a bracket under the tape, behind the head by position
   local y = TY + HMAX + 4
-  local to = headf - st.age / st.reel
+  -- (one for each head, the first brightest)
   local w = max(2, st.pos_spread * n)
-  for k = 0, floor(w) do P(tape_x(to - k / n, n), y, 7) end
-  P(tape_x(to, n), y - 1, 7)
-  P(tape_x(to - w / n, n), y - 1, 7)
+  for h = 0, (st.heads or 1) - 1 do
+    local to = headf - (st.age + h * (st.hgap or 0)) / st.reel
+    local l = h == 0 and 7 or 4
+    for k = 0, floor(w) do P(tape_x(to - k / n, n), y, l) end
+    P(tape_x(to, n), y - 1, l)
+    P(tape_x(to - w / n, n), y - 1, l)
+  end
 
   -- the grains; the filter dims them as it closes, drive shakes them
   local dim = 1
@@ -322,13 +327,14 @@ function V.update(dt, st)
   spawn_acc = spawn_acc + min(st.density, 30) * dt
   while spawn_acc >= 1 do
     spawn_acc = spawn_acc - 1
-    local from = st.head / st.reel - (st.age + st.pos_spread * st.reel * random()) / st.reel
+    local h = random(st.heads or 1) - 1 -- the head that plays it
+    local from = st.head / st.reel - (st.age + h * (st.hgap or 0) + st.pos_spread * st.reel * random()) / st.reel
     local loud = level_at(st.wave, from)
     -- silence on the tape throws none
     if #grains < MAX_GRAINS and st.filled > 0 and loud > 0.05 then
       local dir = random() < st.reverse and 1 or -1 -- backwards: down
       local life = max(0.6, min(2.5, st.size * 2))
-      local v = (4 + 8 * sqrt(st.rate)) * dir
+      local v = (4 + 8 * sqrt(st.rate * 2 ^ ((st.hp and st.hp[h] or 0) / 12))) * dir
       local len = 1 + floor(3 * max(0, min(1, math.log(st.size / 0.02) / math.log(100))) + 0.5)
       local h = heights[floor((from % 1) * n) % n + 1] or 0
       grains[#grains + 1] = { x = tape_x(from, n), y = TY + (h + 1) * dir, v = v, v0 = v, vx = (random() - 0.5) * 3,

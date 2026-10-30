@@ -38,6 +38,7 @@ from Clouds and Rings; without them, FreeVerb2.
 | E2, E3       | that part's two macros (their names and bars show for a moment while you turn them)               |
 | K3           | its gesture: drift (wind), press the reel (catch), a burst (scatter), backwards (tint), a fade (tone), hold the haze (air) |
 | hold K2 + E2 | its variety: the wind (wind), reel length (catch), grain envelope (scatter), scale (tint), media (tone) |
+| hold K2 + E3 | the heads: how many (catch), how far apart in pitch (tint)                               |
 | hold K1      | peek: every part and where its macros are, and the station                               |
 | hold K1 + K2 | back to the station before                                                               |
 
@@ -63,6 +64,9 @@ K2, turn E2). The bars beside the names show where each macro is.
 - K3 *press*: stop recording, so the reel holds what it has and the grains keep playing it (K3
   again releases it).
 - variety, *reel length*: 4, 8, 15, 30 or 60 seconds of tape.
+- hold K2 + E3, *heads*: how many places on the reel the grains are read from, 1 to 4. The heads
+  sit evenly spread along the reel behind the first (which position moves), so you hear the
+  station now and seconds ago at once. Each has its bracket under the tape.
 
 **scatter**: the grains themselves.
 - *density* (E2): how many: from one every two seconds to 40 a second, looser in time and wider
@@ -80,6 +84,9 @@ K2, turn E2). The bars beside the names show where each macro is.
   some grains also play backwards.
 - K3 *flip*: most grains play backwards (K3 again turns them around).
 - variety, *scale*: octaves, fifths, major, minor, chromatic, or free (no snapping).
+- hold K2 + E3, *heads apart*: with more than one head, each plays the next note of the scale up
+  from the one before it: in unison, or one to four steps of the scale apart (a chord, in major or
+  minor). Free counts semitones; nothing goes more than two octaves above the first head.
 
 **tone**: the color of the sound.
 - *color* (E2): one filter knob, like a DJ mixer's. The middle is open. Turn left and a low-pass

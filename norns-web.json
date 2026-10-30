@@ -22,6 +22,10 @@
       "does": "choose a variety: the wind, the reel's length, the grains' shape, the scale, the media"
     },
     {
+      "keys": "hold K2 + E3",
+      "does": "the heads: how many read the reel (catch), how far apart they play in the scale (tint)"
+    },
+    {
       "keys": "hold K1",
       "does": "peek at every part, where its knobs are, and the station"
     },

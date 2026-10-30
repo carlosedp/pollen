@@ -77,6 +77,11 @@ Routine {
 	check.("cross-pollination at its most: the limiter holds", ~r[1] <= 0.97, ~r);
 	[[\fb, 0], [\density, 8], [\size, 0.15], [\pitch, 0], [\pitch_spread, 0]].do { |c| eng.cmd(\set, *c) };
 
+	[[\heads, 4], [\hgap, 2], [\hp1, 4], [\hp2, 7], [\hp3, 12], [\density, 30]].do { |c| eng.cmd(\set, *c) };
+	~r = measure.(2);
+	check.("four heads, a chord apart", (~r[0] > 0.005) and: { ~r[1] <= 0.97 }, ~r);
+	[[\heads, 1], [\hgap, 0], [\hp1, 0], [\hp2, 0], [\hp3, 0], [\density, 8]].do { |c| eng.cmd(\set, *c) };
+
 	eng.cmd(\set, \reverse, 1);
 	~r = measure.(1.5);
 	check.("all grains backwards", ~r[0] > 0.005, ~r);

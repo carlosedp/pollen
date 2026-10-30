@@ -85,6 +85,12 @@ r = render(6);
 check("cross-pollination at its most: the limiter holds", r.peak <= 0.97, r);
 set("fb", 0); set("density", 8); set("size", 0.15); set("pitch", 0); set("pitch_spread", 0);
 
+// four heads, spread along the reel, a chord apart
+set("heads", 4); set("hgap", 2); set("hp1", 4); set("hp2", 7); set("hp3", 12); set("density", 30);
+r = render(2);
+check("four heads, a chord apart", r.rms > 0.005 && r.peak <= 0.97, r);
+set("heads", 1); set("hgap", 0); set("hp1", 0); set("hp2", 0); set("hp3", 0); set("density", 8);
+
 set("reverse", 1); r = render(1.5);
 check("all grains backwards", r.rms > 0.005, r);
 set("reverse", 0);
